@@ -1,0 +1,18 @@
+.wrapper {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  max-width: 160px;
+}
+
+/* 下拉按钮在狭窄的工具栏里要能被压缩 */
+.wrapper > button {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.wrapper > button > span {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
