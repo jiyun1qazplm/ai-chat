@@ -253,4 +253,13 @@ export const zh = {
   settingsProviderClaude: 'Anthropic Claude',
   settingsProviderGeminiDescription: '原生 Gemini 接口，支持图片与思考预算',
   settingsProviderClaudeDescription: '原生 Claude 接口，支持图片与思考预算',
+  settingsTtsEngine: '朗读引擎',
+  settingsTtsBuiltin: '内置（DeepSeek）',
+  settingsTtsExternal: '外部 TTS',
+  settingsTtsBaseUrl: 'TTS 调用地址',
+  settingsTtsModel: 'TTS 模型',
+  settingsTtsExternalVoice: '音色',
+  settingsTtsFormat: '音频格式',
+  settingsTtsSpeed: '语速（{value}×）',
+  ttsTestSave: '试听并保存',
 } as const
