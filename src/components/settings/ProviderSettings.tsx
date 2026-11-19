@@ -128,7 +128,9 @@ export const OpenAIEndpointFields = () => {
         <div className={styles.label}>{t('openaiApiKey')}</div>
         <div className={styles.apiKeyInput}>
           <input
-            type="password"
+            // 用 text + CSS 脱敏，避开系统安全键盘
+            type="text"
+            className={styles.masked}
             autoComplete="off"
             spellCheck={false}
             placeholder={t('openaiApiKeyPlaceholder')}
@@ -218,7 +220,9 @@ export const TavilyField = () => {
         <div className={styles.label}>{t('tavilyApiKey')}</div>
         <div className={styles.apiKeyInput}>
           <input
-            type="password"
+            // 用 text + CSS 脱敏，避开系统安全键盘
+            type="text"
+            className={styles.masked}
             autoComplete="off"
             spellCheck={false}
             placeholder={t('tavilyApiKeyPlaceholder')}

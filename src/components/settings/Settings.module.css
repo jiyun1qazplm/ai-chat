@@ -535,3 +535,12 @@
 .probeBad {
   color: var(--dsw-alias-state-error-primary);
 }
+
+/*
+ * 输入内容脱敏：用 text 类型避开系统安全键盘，再用 -webkit-text-security 打码。
+ * 焦点时也保持打码，避免肩窥。
+ */
+.masked {
+  -webkit-text-security: disc;
+  text-security: disc;
+}

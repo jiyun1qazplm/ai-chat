@@ -40,7 +40,9 @@ export const ApiKeyField = ({ editor }: { editor: ApiKeyEditor }) => {
         ) : (
           <div className={styles.apiKeyInput}>
             <input
-              type="password"
+              // 用 text + CSS 脱敏，避开系统安全键盘
+              type="text"
+              className={styles.masked}
               placeholder={t('apiKeyPlaceholder')}
               autoComplete="off"
               spellCheck={false}
