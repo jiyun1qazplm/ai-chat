@@ -27,7 +27,6 @@ import {
   setLocale,
   setLocation,
   setThemePreference,
-  setTtsVoice,
   useSettings,
   type ThemePreference,
 } from '../../services/settings.js'
@@ -46,6 +45,7 @@ import {
   TavilyOptions,
 } from './ProviderSettings.js'
 import { closeSettings, useSettingsDialog, type SettingsSection } from './settingsDialogState.js'
+import { ExternalTtsFields, TtsEngineSetting } from './TtsSettings.js'
 import styles from './Settings.module.css'
 
 /**
@@ -112,7 +112,8 @@ const SettingsContent = () => {
               <ThemeSetting />
               <AppearanceSettings />
               <LocaleSetting />
-              <TtsVoiceSetting />
+              <TtsEngineSetting />
+              <ExternalTtsFields />
               <LocationSetting />
             </>
           ) : (
@@ -319,28 +320,6 @@ const LocaleSetting = () => {
 }
 
 /** 朗读音色：stella（海星，女声）/ tide（暗潮，男声） */
-const TtsVoiceSetting = () => {
-  const t = useTranslate()
-  const ttsVoice = useSettings((state) => state.ttsVoice)
-  return (
-    <SettingCell
-      label={t('settingsTtsVoice')}
-      status={null}
-      action={
-        <Select
-          ariaLabel={t('settingsTtsVoice')}
-          value={ttsVoice}
-          options={[
-            { value: 'stella', label: t('settingsTtsVoiceStella') },
-            { value: 'tide', label: t('settingsTtsVoiceTide') },
-          ]}
-          onChange={setTtsVoice}
-        />
-      }
-    />
-  )
-}
-
 /** 覆盖导入的二次确认，叠在设置弹窗上 */
 const ImportConfirm = ({
   historyImport,
