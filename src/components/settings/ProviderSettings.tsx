@@ -10,6 +10,16 @@ import {
 import { searchWithTavily } from '../../services/api/tavily.js'
 import { fetchOpenAIModels } from '../../services/api/openai.js'
 import {
+  DEFAULT_CLAUDE_BASE_URL,
+  fetchClaudeModels,
+  verifyClaudeEndpoint,
+} from '../../services/api/claude.js'
+import {
+  DEFAULT_GEMINI_BASE_URL,
+  fetchGeminiModels,
+  verifyGeminiEndpoint,
+} from '../../services/api/gemini.js'
+import {
   DEFAULT_OPENAI_MODEL,
   setOpenAIApiKey,
   setOpenAIBaseUrl,
@@ -17,6 +27,10 @@ import {
   setProvider,
   setTavilyApiKey,
   setOpenAIModels,
+  setClaudeModels,
+  setGeminiModels,
+  setClaudeSettings,
+  setGeminiSettings,
   setTavilyOptions,
   useSettings,
   type ApiProvider,
@@ -40,13 +54,19 @@ export const ProviderField = () => {
           options={[
             { value: 'deepseek' as ApiProvider, label: t('settingsProviderDeepseek') },
             { value: 'openai' as ApiProvider, label: t('settingsProviderOpenai') },
+            { value: 'gemini' as ApiProvider, label: t('settingsProviderGemini') },
+            { value: 'claude' as ApiProvider, label: t('settingsProviderClaude') },
           ]}
           onChange={setProvider}
         />
         <div className={styles.description}>
           {provider === 'openai'
             ? t('settingsProviderOpenaiDescription')
-            : t('settingsProviderDescription')}
+            : provider === 'gemini'
+              ? t('settingsProviderGeminiDescription')
+              : provider === 'claude'
+                ? t('settingsProviderClaudeDescription')
+                : t('settingsProviderDescription')}
         </div>
       </div>
     </div>
@@ -384,3 +404,161 @@ export const TavilyOptions = () => {
     </div>
   )
 }
+
+/**
+ * Gemini / Claude 共用的配置面板：地址、Key、模型名。
+ * 地址留空即用官方接口，填了则用于代理或自建网关。
+ */
+const NativeFields = ({ provider }: { provider: 'gemini' | 'claude' }) => {
+  const t = useTranslate()
+  const saved = useSettings()
+  const isGemini = provider === 'gemini'
+  const savedBaseUrl = isGemini ? saved.geminiBaseUrl : saved.claudeBaseUrl
+  const savedKey = (isGemini ? saved.geminiApiKey : saved.claudeApiKey) ?? ''
+  const savedModel = isGemini ? saved.geminiModel : saved.claudeModel
+  const models = isGemini ? saved.geminiModels : saved.claudeModels
+  const defaultUrl = isGemini ? DEFAULT_GEMINI_BASE_URL : DEFAULT_CLAUDE_BASE_URL
+
+  const [baseUrl, setBaseUrl] = useState(savedBaseUrl)
+  const [apiKey, setApiKey] = useState(savedKey)
+  const [model, setModel] = useState(savedModel)
+  const [saving, setSaving] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const save = (patch: { baseUrl?: string; apiKey?: string; model?: string }) => {
+    if (isGemini) {
+      setGeminiSettings({
+        baseUrl: patch.baseUrl ?? baseUrl,
+        apiKey: patch.apiKey ?? apiKey,
+        model: patch.model ?? model,
+      })
+    } else {
+      setClaudeSettings({
+        baseUrl: patch.baseUrl ?? baseUrl,
+        apiKey: patch.apiKey ?? apiKey,
+        model: patch.model ?? model,
+      })
+    }
+  }
+
+  const submit = async () => {
+    if (saving) {
+      return
+    }
+    if (!apiKey.trim()) {
+      setError(t('openaiApiKeyRequired'))
+      return
+    }
+    setSaving(true)
+    setError(null)
+    try {
+      if (isGemini) {
+        await verifyGeminiEndpoint(baseUrl || DEFAULT_GEMINI_BASE_URL, apiKey.trim())
+      } else {
+        await verifyClaudeEndpoint(baseUrl || DEFAULT_CLAUDE_BASE_URL, apiKey.trim())
+      }
+      save({})
+      showToast({ key: 'openaiSaved' })
+    } catch (cause) {
+      const kind = classifyApiError(cause)
+      setError(
+        kind === 'unauthorized'
+          ? t('openaiInvalid')
+          : kind === 'network'
+            ? t('commonNetworkErrorToast')
+            : t('openaiVerificationFailed', {
+                message: cause instanceof ApiError ? cause.message : String(cause),
+              })
+      )
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const refreshModels = async () => {
+    if (refreshing || !apiKey.trim()) {
+      return
+    }
+    setRefreshing(true)
+    const url = baseUrl || defaultUrl
+    const list = isGemini
+      ? await fetchGeminiModels(url, apiKey.trim())
+      : await fetchClaudeModels(url, apiKey.trim())
+    if (list.length > 0) {
+      if (isGemini) {
+        setGeminiModels(list)
+      } else {
+        setClaudeModels(list)
+      }
+    }
+    setRefreshing(false)
+  }
+
+  return (
+    <div className={styles.cell}>
+      <div className={styles.apiKey}>
+        <div className={styles.label}>{t('openaiBaseUrl')}</div>
+        <div className={styles.apiKeyInput}>
+          <input
+            type="text"
+            autoComplete="off"
+            spellCheck={false}
+            placeholder={defaultUrl}
+            value={baseUrl}
+            onChange={(event) => setBaseUrl(event.target.value)}
+          />
+        </div>
+
+        <div className={styles.label}>{t('openaiApiKey')}</div>
+        <div className={styles.apiKeyInput}>
+          <input
+            type="text"
+            className={styles.masked}
+            autoComplete="off"
+            spellCheck={false}
+            placeholder={t('openaiApiKeyPlaceholder')}
+            value={apiKey}
+            onChange={(event) => setApiKey(event.target.value)}
+          />
+        </div>
+
+        <div className={styles.label}>{t('openaiModel')}</div>
+        <div className={styles.modelPicker}>
+          <Select
+            ariaLabel={t('openaiModel')}
+            value={model}
+            options={
+              models.length > 0
+                ? models.map((id) => ({ value: id, label: id }))
+                : [{ value: model, label: model }]
+            }
+            searchable
+            searchPlaceholder={t('modelSearchPlaceholder')}
+            onChange={setModel}
+          />
+          <button
+            type="button"
+            className={styles.modelRefresh}
+            aria-label={t('modelRefresh')}
+            disabled={refreshing}
+            onClick={() => void refreshModels()}
+          >
+            <span className={refreshing ? styles.spinning : undefined}>⟳</span>
+          </button>
+        </div>
+
+        {error ? <div className={styles.error}>{error}</div> : null}
+        <Button block disabled={saving} onClick={() => void submit()}>
+          {t(saving ? 'openaiSaving' : 'openaiSave')}
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+/** Gemini 原生接口配置 */
+export const GeminiFields = () => <NativeFields provider="gemini" />
+
+/** Claude 原生接口配置 */
+export const ClaudeFields = () => <NativeFields provider="claude" />

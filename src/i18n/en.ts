@@ -261,4 +261,8 @@ export const en = {
   tavilyAnswerOff: 'Off',
   tavilyOptionsDescription:
     'More results give the model more context but cost more tokens; advanced is more accurate but slower',
+  settingsProviderGemini: 'Google Gemini',
+  settingsProviderClaude: 'Anthropic Claude',
+  settingsProviderGeminiDescription: 'Native Gemini API with images and thinking budget',
+  settingsProviderClaudeDescription: 'Native Claude API with images and thinking budget',
 } satisfies Record<keyof typeof zh, string>

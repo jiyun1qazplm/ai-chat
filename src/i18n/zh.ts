@@ -249,4 +249,8 @@ export const zh = {
   tavilyAnswerOff: '关闭',
   tavilyOptionsDescription:
     '结果数越多模型可参考的信息越多，但消耗的 token 也更多；advanced 更准但更慢',
+  settingsProviderGemini: 'Google Gemini',
+  settingsProviderClaude: 'Anthropic Claude',
+  settingsProviderGeminiDescription: '原生 Gemini 接口，支持图片与思考预算',
+  settingsProviderClaudeDescription: '原生 Claude 接口，支持图片与思考预算',
 } as const

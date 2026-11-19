@@ -38,6 +38,8 @@ import { Select } from '../base/Select.js'
 import { showToast } from '../base/toastState.js'
 import { ApiKeyConfirm, ApiKeyField, useApiKeyEditor } from './ApiKeyField.js'
 import {
+  ClaudeFields,
+  GeminiFields,
   OpenAIEndpointFields,
   ProviderField,
   TavilyField,
@@ -122,6 +124,10 @@ const SettingsContent = () => {
                   <TavilyField />
                   <TavilyOptions />
                 </>
+              ) : provider === 'gemini' ? (
+                <GeminiFields />
+              ) : provider === 'claude' ? (
+                <ClaudeFields />
               ) : (
                 <ApiKeyField editor={apiKeyEditor} />
               )}
@@ -142,7 +148,7 @@ const SettingsContent = () => {
                   </Button>
                 }
               />
-              {isMobile && provider !== 'openai' ? <ApiKeyConfirm editor={apiKeyEditor} /> : null}
+              {isMobile && provider === 'deepseek' ? <ApiKeyConfirm editor={apiKeyEditor} /> : null}
             </>
           )}
         </div>

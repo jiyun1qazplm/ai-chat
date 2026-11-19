@@ -2,12 +2,14 @@ import { create } from 'zustand'
 import { createId } from '../../utils/id.js'
 import { ApiError, streamMessage } from '../api/client.js'
 import { runOpenAIAgent, toMessageStreamEvents } from '../api/agent.js'
+import { DEFAULT_CLAUDE_BASE_URL, streamClaudeMessage } from '../api/claude.js'
+import { DEFAULT_GEMINI_BASE_URL, streamGeminiMessage } from '../api/gemini.js'
 import { streamOpenAIMessage, type ImageDataUrls } from '../api/openai.js'
 import { formatSearchResults, searchWithTavily } from '../api/tavily.js'
 import type { ChatModel, CreateMessageRequest } from '../api/types.js'
 import { extractFileIds, getFileErrorCode, isRetryableApiError } from '../api/errors.js'
 import { cancelUpload, describeUploadError, uploadAttachment, useUploads } from '../attachments.js'
-import { useSettings } from '../settings.js'
+import { useSettings, type ApiProvider } from '../settings.js'
 import { buildReasoningParam } from '../api/reasoning.js'
 import { appendBranch, getVisibleMessages, normalizeSession, selectVersion } from './branches.js'
 import * as db from './db.js'
@@ -48,18 +50,33 @@ const MODEL: ChatModel = 'deepseek-flash'
  */
 const resolveModel = (
   recorded: string | null,
-  settings: { provider: 'deepseek' | 'openai'; openaiModel: string },
+  settings: {
+    provider: ApiProvider
+    openaiModel: string
+    geminiModel: string
+    claudeModel: string
+  },
   /** 本对话选定的模型，优先级最高 */
   sessionModel?: string
 ): string => {
   const known = recorded !== null && DEEPSEEK_MODELS.includes(recorded as ChatModel)
-  if (settings.provider === 'openai') {
-    if (sessionModel?.trim()) {
-      return sessionModel.trim()
-    }
-    return known || !recorded ? settings.openaiModel || MODEL : recorded
+  // 各平台的默认模型；DeepSeek 以外的平台不接受官方模型名
+  const fallback =
+    settings.provider === 'gemini'
+      ? settings.geminiModel
+      : settings.provider === 'claude'
+        ? settings.claudeModel
+        : settings.provider === 'openai'
+          ? settings.openaiModel
+          : MODEL
+  if (settings.provider === 'deepseek') {
+    return known ? (recorded as ChatModel) : MODEL
   }
-  return known ? (recorded as ChatModel) : MODEL
+  // 非官方平台：记录的模型名是 DeepSeek 专用名时视为失效
+  if (sessionModel?.trim()) {
+    return sessionModel.trim()
+  }
+  return known || !recorded ? fallback || MODEL : recorded
 }
 
 /** 所有生成请求统一携带的助手身份说明 */
@@ -67,6 +84,12 @@ const SYSTEM_PROMPT = '该助手为DeepSeek，由深度求索公司创造。'
 
 /** 保留最近打开的详情；当前会话、生成中及尚未成功保存的会话不淘汰。 */
 const SESSION_CACHE_LIMIT = 5
+/** 开启思考时给 Gemini 的思考预算（token） */
+const GEMINI_THINKING_BUDGET = 8192
+/** Claude 的固定输出上限，需大于思考预算 */
+const CLAUDE_MAX_TOKENS = 16000
+/** 开启思考时给 Claude 的预算 */
+const CLAUDE_THINKING_BUDGET = 8192
 /** 安全审核固定开启，所有请求都走扩展模式 */
 const SAFETY_CHECK = { level: 'high' } as const
 /** 服务端判定 file_id 失效后，重新补传并重发的最多次数（不含首次请求） */
@@ -1108,7 +1131,8 @@ const streamReply = async (sessionId: string, initial: AssistantMessage, request
       let receivedContent = false
       try {
         const settings = useSettings.getState()
-        const compatible = settings.provider === 'openai'
+        // 只有 DeepSeek 官方模式用 Files API 上传附件，其余平台都把原件内联
+        const compatible = settings.provider !== 'deepseek'
         const prepared = compatible
           ? refreshRequest(sessionId, request)
           : await prepareFiles(sessionId, request, controller.signal)
@@ -1136,11 +1160,70 @@ const streamReply = async (sessionId: string, initial: AssistantMessage, request
         const sessionModel = compatible ? getSession(sessionId)?.model : undefined
         // 兼容模式打开搜索开关时走工具调用循环，由模型自主决定是否联网
         const tavilyKey = settings.tavilyApiKey?.trim()
-        const useSearch = compatible && (initial.search ?? false) && Boolean(tavilyKey)
-        const events = compatible
-          ? useSearch
-            ? toMessageStreamEvents(
-                runOpenAIAgent({
+        const useSearch =
+          settings.provider === 'openai' && (initial.search ?? false) && Boolean(tavilyKey)
+        // Gemini 与 Claude 走各自的原生协议
+        const native =
+          settings.provider === 'gemini'
+            ? streamGeminiMessage({
+                baseUrl: settings.geminiBaseUrl || DEFAULT_GEMINI_BASE_URL,
+                apiKey: settings.geminiApiKey ?? '',
+                model: resolveModel(initial.model, settings, sessionModel),
+                system: prepared.systemPrompt ?? '',
+                messages,
+                images: await collectImages(prepared, controller.signal),
+                // 开启思考给预算；关闭设 0 让模型不思考
+                thinking: { thinkingBudget: initial.thinking ? GEMINI_THINKING_BUDGET : 0 },
+                signal: controller.signal,
+              })
+            : settings.provider === 'claude'
+              ? streamClaudeMessage({
+                  baseUrl: settings.claudeBaseUrl || DEFAULT_CLAUDE_BASE_URL,
+                  apiKey: settings.claudeApiKey ?? '',
+                  model: resolveModel(initial.model, settings, sessionModel),
+                  system: prepared.systemPrompt ?? '',
+                  messages,
+                  images: await collectImages(prepared, controller.signal),
+                  maxTokens: CLAUDE_MAX_TOKENS,
+                  thinkingBudget: initial.thinking ? CLAUDE_THINKING_BUDGET : undefined,
+                  signal: controller.signal,
+                })
+              : null
+        const events = native
+          ? native
+          : compatible
+            ? useSearch
+              ? toMessageStreamEvents(
+                  runOpenAIAgent({
+                    baseUrl: settings.openaiBaseUrl,
+                    apiKey: settings.openaiApiKey ?? '',
+                    model: resolveModel(initial.model, settings, sessionModel),
+                    reasoningParam: buildReasoningParam(
+                      resolveModel(initial.model, settings, sessionModel),
+                      initial.thinking ?? false,
+                      settings.reasoningMode,
+                      settings.reasoningOnMode
+                    ),
+                    system: prepared.systemPrompt ?? '',
+                    messages,
+                    images: await collectImages(prepared, controller.signal),
+                    search: async (query, searchSignal) => {
+                      const { results, answer } = await searchWithTavily(
+                        tavilyKey ?? '',
+                        query,
+                        searchSignal,
+                        {
+                          maxResults: settings.tavilyMaxResults,
+                          searchDepth: settings.tavilySearchDepth,
+                          includeAnswer: settings.tavilyIncludeAnswer,
+                        }
+                      )
+                      return { results, text: formatSearchResults(query, results, answer) }
+                    },
+                    signal: controller.signal,
+                  })
+                )
+              : streamOpenAIMessage({
                   baseUrl: settings.openaiBaseUrl,
                   apiKey: settings.openaiApiKey ?? '',
                   model: resolveModel(initial.model, settings, sessionModel),
@@ -1150,54 +1233,25 @@ const streamReply = async (sessionId: string, initial: AssistantMessage, request
                     settings.reasoningMode,
                     settings.reasoningOnMode
                   ),
+                  // 只用本对话填写的提示词；没填就不发 system
                   system: prepared.systemPrompt ?? '',
                   messages,
                   images: await collectImages(prepared, controller.signal),
-                  search: async (query, searchSignal) => {
-                    const { results, answer } = await searchWithTavily(
-                      tavilyKey ?? '',
-                      query,
-                      searchSignal,
-                      {
-                        maxResults: settings.tavilyMaxResults,
-                        searchDepth: settings.tavilySearchDepth,
-                        includeAnswer: settings.tavilyIncludeAnswer,
-                      }
-                    )
-                    return { results, text: formatSearchResults(query, results, answer) }
-                  },
                   signal: controller.signal,
                 })
+            : streamMessage(
+                settings.apiKey ?? '',
+                {
+                  model: resolveModel(initial.model, settings) as ChatModel,
+                  system: SYSTEM_PROMPT,
+                  messages,
+                  thinking: { type: initial.thinking ? 'enabled' : 'disabled' },
+                  safety_check: SAFETY_CHECK,
+                  tools: serverTools(initial.search ?? false),
+                  ...(titleRequests.has(controller) ? { title: { enabled: true } } : {}),
+                },
+                controller.signal
               )
-            : streamOpenAIMessage({
-                baseUrl: settings.openaiBaseUrl,
-                apiKey: settings.openaiApiKey ?? '',
-                model: resolveModel(initial.model, settings, sessionModel),
-                reasoningParam: buildReasoningParam(
-                  resolveModel(initial.model, settings, sessionModel),
-                  initial.thinking ?? false,
-                  settings.reasoningMode,
-                  settings.reasoningOnMode
-                ),
-                // 只用本对话填写的提示词；没填就不发 system
-                system: prepared.systemPrompt ?? '',
-                messages,
-                images: await collectImages(prepared, controller.signal),
-                signal: controller.signal,
-              })
-          : streamMessage(
-              settings.apiKey ?? '',
-              {
-                model: resolveModel(initial.model, settings) as ChatModel,
-                system: SYSTEM_PROMPT,
-                messages,
-                thinking: { type: initial.thinking ? 'enabled' : 'disabled' },
-                safety_check: SAFETY_CHECK,
-                tools: serverTools(initial.search ?? false),
-                ...(titleRequests.has(controller) ? { title: { enabled: true } } : {}),
-              },
-              controller.signal
-            )
         const blockIndexes = new Map<number, number>()
         for await (const event of events) {
           receivedContent ||= event.type === 'content_block_start'

@@ -12,7 +12,7 @@ export type ThemePreference = 'light' | 'dark' | 'system'
  * 接口服务商：deepseek 走官方 Anthropic 兼容接口（搜索、阅读链接等全家桶能力）；
  * openai 走任意 OpenAI 兼容端点（/chat/completions），只用到对话与流式输出。
  */
-export type ApiProvider = 'deepseek' | 'openai'
+export type ApiProvider = 'deepseek' | 'openai' | 'gemini' | 'claude'
 
 export type { ReasoningMode } from './api/reasoning.js'
 
@@ -29,6 +29,17 @@ type Settings = {
   openaiApiKey: string | null
   /** OpenAI 兼容模式的模型名 */
   openaiModel: string
+  /** Gemini 原生接口地址；留空用官方地址 */
+  geminiBaseUrl: string
+  geminiApiKey: string | null
+  geminiModel: string
+  /** Claude 原生接口地址；留空用官方地址 */
+  claudeBaseUrl: string
+  claudeApiKey: string | null
+  claudeModel: string
+  /** 各平台拉取到的模型列表 */
+  geminiModels: string[]
+  claudeModels: string[]
   /** Tavily 联网搜索的 Key，兼容模式下打开搜索开关时使用 */
   tavilyApiKey: string | null
   /** 每次搜索最多返回多少条结果（1-20） */
@@ -70,6 +81,14 @@ const KEYS = {
   openaiBaseUrl: 'chat-demo:openai-base-url',
   openaiApiKey: 'chat-demo:openai-api-key',
   openaiModel: 'chat-demo:openai-model',
+  geminiBaseUrl: 'chat-demo:gemini-base-url',
+  geminiApiKey: 'chat-demo:gemini-api-key',
+  geminiModel: 'chat-demo:gemini-model',
+  claudeBaseUrl: 'chat-demo:claude-base-url',
+  claudeApiKey: 'chat-demo:claude-api-key',
+  claudeModel: 'chat-demo:claude-model',
+  geminiModels: 'chat-demo:gemini-models',
+  claudeModels: 'chat-demo:claude-models',
   tavilyApiKey: 'chat-demo:tavily-api-key',
   tavilyMaxResults: 'chat-demo:tavily-max-results',
   tavilySearchDepth: 'chat-demo:tavily-search-depth',
@@ -187,8 +206,10 @@ const initialDensity = (): Settings['density'] => {
 const initialTtsVoice = (): TtsVoice => (read(KEYS.ttsVoice) === 'tide' ? 'tide' : 'stella')
 
 /** 未保存过时使用官方接口 */
-const initialProvider = (): ApiProvider =>
-  read(KEYS.provider) === 'openai' ? 'openai' : 'deepseek'
+const initialProvider = (): ApiProvider => {
+  const saved = read(KEYS.provider)
+  return saved === 'openai' || saved === 'gemini' || saved === 'claude' ? saved : 'deepseek'
+}
 
 const initialOpenAIModel = (): string => read(KEYS.openaiModel)?.trim() || DEFAULT_OPENAI_MODEL
 
@@ -196,6 +217,16 @@ const initialOpenAIModel = (): string => read(KEYS.openaiModel)?.trim() || DEFAU
 const initialTavilyMaxResults = (): number => {
   const value = Number(read(KEYS.tavilyMaxResults))
   return Number.isInteger(value) && value >= 1 && value <= 20 ? value : 5
+}
+
+/** 读取已缓存的模型列表；损坏或不是数组时按空处理 */
+const initialModelList = (key: string): string[] => {
+  try {
+    const parsed: unknown = JSON.parse(read(key) ?? '[]')
+    return Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === 'string') : []
+  } catch {
+    return []
+  }
 }
 
 /** 拉取过的模型列表，损坏或不是数组时按空处理 */
@@ -214,6 +245,14 @@ export const useSettings = create<Settings>(() => ({
   openaiBaseUrl: read(KEYS.openaiBaseUrl) ?? '',
   openaiApiKey: read(KEYS.openaiApiKey),
   openaiModel: initialOpenAIModel(),
+  geminiBaseUrl: read(KEYS.geminiBaseUrl) ?? '',
+  geminiApiKey: read(KEYS.geminiApiKey),
+  geminiModel: read(KEYS.geminiModel)?.trim() || 'gemini-2.5-flash',
+  claudeBaseUrl: read(KEYS.claudeBaseUrl) ?? '',
+  claudeApiKey: read(KEYS.claudeApiKey),
+  claudeModel: read(KEYS.claudeModel)?.trim() || 'claude-sonnet-4-20250514',
+  geminiModels: initialModelList(KEYS.geminiModels),
+  claudeModels: initialModelList(KEYS.claudeModels),
   tavilyApiKey: read(KEYS.tavilyApiKey),
   tavilyMaxResults: initialTavilyMaxResults(),
   tavilySearchDepth: read(KEYS.tavilySearchDepth) === 'advanced' ? 'advanced' : 'basic',
@@ -310,8 +349,24 @@ export const isProviderReady = ({
   apiKey,
   openaiBaseUrl,
   openaiApiKey,
-}: Pick<Settings, 'provider' | 'apiKey' | 'openaiBaseUrl' | 'openaiApiKey'>): boolean =>
-  provider === 'openai' ? Boolean(openaiBaseUrl.trim() && openaiApiKey?.trim()) : Boolean(apiKey)
+  geminiApiKey,
+  claudeApiKey,
+}: Pick<
+  Settings,
+  'provider' | 'apiKey' | 'openaiBaseUrl' | 'openaiApiKey' | 'geminiApiKey' | 'claudeApiKey'
+>): boolean => {
+  switch (provider) {
+    case 'openai':
+      return Boolean(openaiBaseUrl.trim() && openaiApiKey?.trim())
+    case 'gemini':
+      // Gemini 与 Claude 有官方地址，填了 Key 即可
+      return Boolean(geminiApiKey?.trim())
+    case 'claude':
+      return Boolean(claudeApiKey?.trim())
+    default:
+      return Boolean(apiKey)
+  }
+}
 
 export const setAccentColor = (accentColor: string | null) => {
   write(KEYS.accentColor, accentColor)
@@ -390,4 +445,56 @@ export const setTavilyOptions = (options: {
     next.tavilyIncludeAnswer = options.includeAnswer
   }
   useSettings.setState(next)
+}
+
+export const setGeminiSettings = (patch: {
+  baseUrl?: string
+  apiKey?: string | null
+  model?: string
+}) => {
+  const next: Partial<Settings> = {}
+  if (patch.baseUrl !== undefined) {
+    write(KEYS.geminiBaseUrl, patch.baseUrl)
+    next.geminiBaseUrl = patch.baseUrl
+  }
+  if (patch.apiKey !== undefined) {
+    write(KEYS.geminiApiKey, patch.apiKey)
+    next.geminiApiKey = patch.apiKey
+  }
+  if (patch.model !== undefined) {
+    write(KEYS.geminiModel, patch.model)
+    next.geminiModel = patch.model
+  }
+  useSettings.setState(next)
+}
+
+export const setClaudeSettings = (patch: {
+  baseUrl?: string
+  apiKey?: string | null
+  model?: string
+}) => {
+  const next: Partial<Settings> = {}
+  if (patch.baseUrl !== undefined) {
+    write(KEYS.claudeBaseUrl, patch.baseUrl)
+    next.claudeBaseUrl = patch.baseUrl
+  }
+  if (patch.apiKey !== undefined) {
+    write(KEYS.claudeApiKey, patch.apiKey)
+    next.claudeApiKey = patch.apiKey
+  }
+  if (patch.model !== undefined) {
+    write(KEYS.claudeModel, patch.model)
+    next.claudeModel = patch.model
+  }
+  useSettings.setState(next)
+}
+
+export const setGeminiModels = (geminiModels: string[]) => {
+  write(KEYS.geminiModels, JSON.stringify(geminiModels))
+  useSettings.setState({ geminiModels })
+}
+
+export const setClaudeModels = (claudeModels: string[]) => {
+  write(KEYS.claudeModels, JSON.stringify(claudeModels))
+  useSettings.setState({ claudeModels })
 }
