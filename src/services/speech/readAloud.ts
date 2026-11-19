@@ -3,6 +3,7 @@ import type { TranslationMessage } from '../../i18n/index.js'
 import { ApiError } from '../api/client.js'
 import { classifyApiError } from '../api/errors.js'
 import { synthesize, TTS_SAMPLE_RATE } from '../api/speech.js'
+import { synthesizeExternal, toAudioUrl, toPlainSpeech } from '../api/tts.js'
 import { useSettings } from '../settings.js'
 
 /**
@@ -23,11 +24,25 @@ export const useReadAloud = create<ReadAloudState>(() => ({ messageId: null, sta
 /** 首帧前多缓冲一点，减少网络抖动造成的断续 */
 const START_DELAY = 0.1
 
-let current: { controller: AbortController; context: AudioContext } | null = null
+let current: {
+  controller: AbortController
+  context: AudioContext
+  /** 外部 TTS 用 <audio> 播放，内置 TTS 为 null */
+  audio: HTMLAudioElement | null
+  /** 外部 TTS 生成的 object URL，停止时需要释放 */
+  url: string | null
+} | null = null
 
 const finish = (controller: AbortController) => {
   if (current?.controller !== controller) {
     return
+  }
+  if (current.audio) {
+    current.audio.pause()
+    current.audio.src = ''
+  }
+  if (current.url) {
+    URL.revokeObjectURL(current.url)
   }
   void current.context.close()
   current = null
@@ -89,10 +104,53 @@ export const toggleReadAloud = (
   }
   const controller = new AbortController()
   const context = new AudioContext({ sampleRate: TTS_SAMPLE_RATE })
-  current = { controller, context }
+  current = { controller, context, audio: null, url: null }
   useReadAloud.setState({ messageId, status: 'loading' })
-  // 音色在开始朗读时读取，设置中切换后下一次朗读生效
-  const { apiKey, ttsVoice } = useSettings.getState()
+  // 引擎与音色在开始朗读时读取，设置中切换后下一次朗读生效
+  const settings = useSettings.getState()
+  const { apiKey, ttsVoice } = settings
+
+  // 外部 TTS：整段合成后用 <audio> 播放
+  if (settings.ttsEngine === 'external') {
+    void (async () => {
+      try {
+        const blob = await synthesizeExternal(
+          {
+            baseUrl: settings.ttsBaseUrl,
+            apiKey: settings.ttsApiKey ?? '',
+            model: settings.ttsModel,
+            voice: settings.ttsExternalVoice,
+            format: settings.ttsFormat,
+            speed: settings.ttsSpeed,
+          },
+          toPlainSpeech(text),
+          controller.signal
+        )
+        if (controller.signal.aborted) {
+          return
+        }
+        const url = toAudioUrl(blob)
+        const audio = new Audio(url)
+        if (current?.controller === controller) {
+          current.audio = audio
+          current.url = url
+        }
+        audio.onplay = () => useReadAloud.setState({ status: 'playing' })
+        audio.onended = () => finish(controller)
+        audio.onerror = () => {
+          finish(controller)
+          onError(new Error('audio playback failed'))
+        }
+        await audio.play()
+      } catch (error) {
+        if (!controller.signal.aborted) {
+          finish(controller)
+          onError(error)
+        }
+      }
+    })()
+    return
+  }
 
   void (async () => {
     let nextTime = 0
