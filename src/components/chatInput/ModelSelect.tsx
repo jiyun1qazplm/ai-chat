@@ -42,12 +42,47 @@ export const ModelSelect = ({ sessionId }: { sessionId: string | null }) => {
     setLoading(false)
   }, [baseUrl, apiKey])
 
-  // 进入页面就刷新一次，保证网关新增的模型能及时出现
+  /**
+   * 进入页面就刷新一次。依赖只放 provider 与是否已配置，
+   * 避免 baseUrl/apiKey 变化时重复触发；未配置时跳过，配置完成后自动补拉。
+   */
+  const configured = Boolean(baseUrl.trim() && apiKey?.trim())
   useEffect(() => {
-    if (provider === 'openai') {
-      void refresh()
+    if (provider !== 'openai' || !configured) {
+      return
     }
-  }, [provider, refresh])
+    // 直接读最新设置，不受闭包里的旧值影响
+    const { openaiBaseUrl, openaiApiKey } = useSettings.getState()
+    if (!openaiBaseUrl.trim() || !openaiApiKey?.trim()) {
+      return
+    }
+    let cancelled = false
+    setLoading(true)
+    setError(false)
+    void fetchOpenAIModels(openaiBaseUrl, openaiApiKey).then((list) => {
+      if (cancelled) {
+        return
+      }
+      if (list.length > 0) {
+        setOpenAIModels(list)
+      }
+      setLoading(false)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [provider, configured])
+
+  /** 切回页面时再拉一次，覆盖手机后台切回的场景 */
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') {
+        void refresh()
+      }
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
+  }, [refresh])
 
   if (provider !== 'openai') {
     return null
