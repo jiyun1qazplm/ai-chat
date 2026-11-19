@@ -40,6 +40,17 @@ type Settings = {
   /** 各平台拉取到的模型列表 */
   geminiModels: string[]
   claudeModels: string[]
+  /**
+   * 朗读引擎：builtin 用内置 TTS（跟随 DeepSeek Key），
+   * external 用自己配置的 OpenAI 兼容 TTS，与 AI 服务商无关。
+   */
+  ttsEngine: 'builtin' | 'external'
+  ttsBaseUrl: string
+  ttsApiKey: string | null
+  ttsModel: string
+  ttsExternalVoice: string
+  ttsFormat: 'mp3' | 'opus' | 'aac' | 'flac' | 'wav'
+  ttsSpeed: number
   /** Tavily 联网搜索的 Key，兼容模式下打开搜索开关时使用 */
   tavilyApiKey: string | null
   /** 每次搜索最多返回多少条结果（1-20） */
@@ -89,6 +100,13 @@ const KEYS = {
   claudeModel: 'chat-demo:claude-model',
   geminiModels: 'chat-demo:gemini-models',
   claudeModels: 'chat-demo:claude-models',
+  ttsEngine: 'chat-demo:tts-engine',
+  ttsBaseUrl: 'chat-demo:tts-base-url',
+  ttsApiKey: 'chat-demo:tts-api-key',
+  ttsModel: 'chat-demo:tts-model',
+  ttsExternalVoice: 'chat-demo:tts-voice-external',
+  ttsFormat: 'chat-demo:tts-format',
+  ttsSpeed: 'chat-demo:tts-speed',
   tavilyApiKey: 'chat-demo:tavily-api-key',
   tavilyMaxResults: 'chat-demo:tavily-max-results',
   tavilySearchDepth: 'chat-demo:tavily-search-depth',
@@ -219,6 +237,17 @@ const initialTavilyMaxResults = (): number => {
   return Number.isInteger(value) && value >= 1 && value <= 20 ? value : 5
 }
 
+const initialTtsFormat = (): Settings['ttsFormat'] => {
+  const saved = read(KEYS.ttsFormat)
+  return saved === 'opus' || saved === 'aac' || saved === 'flac' || saved === 'wav' ? saved : 'mp3'
+}
+
+/** 语速限制在 0.25-4，非法值回到 1 */
+const initialTtsSpeed = (): number => {
+  const value = Number(read(KEYS.ttsSpeed))
+  return Number.isFinite(value) && value >= 0.25 && value <= 4 ? value : 1
+}
+
 /** 读取已缓存的模型列表；损坏或不是数组时按空处理 */
 const initialModelList = (key: string): string[] => {
   try {
@@ -253,6 +282,13 @@ export const useSettings = create<Settings>(() => ({
   claudeModel: read(KEYS.claudeModel)?.trim() || 'claude-sonnet-4-20250514',
   geminiModels: initialModelList(KEYS.geminiModels),
   claudeModels: initialModelList(KEYS.claudeModels),
+  ttsEngine: read(KEYS.ttsEngine) === 'external' ? 'external' : 'builtin',
+  ttsBaseUrl: read(KEYS.ttsBaseUrl) ?? '',
+  ttsApiKey: read(KEYS.ttsApiKey),
+  ttsModel: read(KEYS.ttsModel)?.trim() || 'tts-1',
+  ttsExternalVoice: read(KEYS.ttsExternalVoice)?.trim() || 'alloy',
+  ttsFormat: initialTtsFormat(),
+  ttsSpeed: initialTtsSpeed(),
   tavilyApiKey: read(KEYS.tavilyApiKey),
   tavilyMaxResults: initialTavilyMaxResults(),
   tavilySearchDepth: read(KEYS.tavilySearchDepth) === 'advanced' ? 'advanced' : 'basic',
@@ -497,4 +533,46 @@ export const setGeminiModels = (geminiModels: string[]) => {
 export const setClaudeModels = (claudeModels: string[]) => {
   write(KEYS.claudeModels, JSON.stringify(claudeModels))
   useSettings.setState({ claudeModels })
+}
+
+export const setTtsSettings = (patch: {
+  engine?: 'builtin' | 'external'
+  baseUrl?: string
+  apiKey?: string | null
+  model?: string
+  voice?: string
+  format?: Settings['ttsFormat']
+  speed?: number
+}) => {
+  const next: Partial<Settings> = {}
+  if (patch.engine !== undefined) {
+    write(KEYS.ttsEngine, patch.engine)
+    next.ttsEngine = patch.engine
+  }
+  if (patch.baseUrl !== undefined) {
+    write(KEYS.ttsBaseUrl, patch.baseUrl)
+    next.ttsBaseUrl = patch.baseUrl
+  }
+  if (patch.apiKey !== undefined) {
+    write(KEYS.ttsApiKey, patch.apiKey)
+    next.ttsApiKey = patch.apiKey
+  }
+  if (patch.model !== undefined) {
+    write(KEYS.ttsModel, patch.model)
+    next.ttsModel = patch.model
+  }
+  if (patch.voice !== undefined) {
+    write(KEYS.ttsExternalVoice, patch.voice)
+    next.ttsExternalVoice = patch.voice
+  }
+  if (patch.format !== undefined) {
+    write(KEYS.ttsFormat, patch.format)
+    next.ttsFormat = patch.format
+  }
+  if (patch.speed !== undefined) {
+    const speed = Math.min(4, Math.max(0.25, patch.speed))
+    write(KEYS.ttsSpeed, String(speed))
+    next.ttsSpeed = speed
+  }
+  useSettings.setState(next)
 }
