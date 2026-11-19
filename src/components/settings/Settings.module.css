@@ -614,3 +614,26 @@
     transform: rotate(360deg);
   }
 }
+
+/* 常用音色快捷按钮 */
+.voiceChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.voiceChip {
+  padding: 4px 10px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 14px;
+  background: transparent;
+  color: var(--dsw-alias-label-secondary);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+
+  &:hover {
+    border-color: var(--dsw-alias-brand-primary);
+    color: var(--dsw-alias-brand-text);
+  }
+}
