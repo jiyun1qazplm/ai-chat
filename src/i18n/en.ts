@@ -247,4 +247,7 @@ export const en = {
   reasoningProbeVerdict: '{tokens} reasoning tokens ({hint})',
   reasoningProbeShown: 'content returned',
   reasoningProbeHidden: 'content hidden',
+  modelSearchPlaceholder: 'Search models',
+  modelRefresh: 'Refresh model list',
+  modelRefreshFailed: 'Refresh failed, kept the previous list',
 } satisfies Record<keyof typeof zh, string>

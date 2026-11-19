@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useAnchoredPosition, useDismiss } from './anchored.js'
 import { IconCheckOutline16, IconChevronDownOutline14 } from './icons.js'
@@ -19,6 +19,8 @@ export const Select = <T extends string>({
   ariaLabel,
   className,
   disabled = false,
+  searchable = false,
+  searchPlaceholder,
 }: {
   value: T
   options: SelectOption<T>[]
@@ -27,8 +29,22 @@ export const Select = <T extends string>({
   ariaLabel?: string
   className?: string
   disabled?: boolean
+  /** 选项很多时在菜单顶部显示搜索框 */
+  searchable?: boolean
+  searchPlaceholder?: string
 }) => {
   const [open, setOpen] = useState(false)
+  /** 菜单内的搜索关键词，关闭菜单时清空 */
+  const [query, setQuery] = useState('')
+  const searchRef = useRef<HTMLInputElement>(null)
+
+  // 按关键词过滤；搜索不区分大小写，空关键词显示全部
+  const visible = useMemo(() => {
+    const keyword = query.trim().toLowerCase()
+    return keyword
+      ? options.filter((option) => option.label.toLowerCase().includes(keyword))
+      : options
+  }, [options, query])
   const current = options.find((option) => option.value === value)
   // 菜单贴右侧展开，最多 320px 高，超出在菜单内滚动
   const { anchorRef, floatingRef, position } = useAnchoredPosition<
@@ -48,7 +64,10 @@ export const Select = <T extends string>({
         aria-haspopup="listbox"
         aria-expanded={open}
         disabled={disabled}
-        onClick={() => setOpen((value) => !value)}
+        onClick={() => {
+          setQuery('')
+          setOpen((value) => !value)
+        }}
       >
         {current ? (
           <span lang={current.lang}>{current.label}</span>
@@ -68,7 +87,37 @@ export const Select = <T extends string>({
               role="listbox"
               aria-label={ariaLabel}
             >
-              {options.map((option) => (
+              {searchable ? (
+                <input
+                  ref={searchRef}
+                  className={styles.search}
+                  type="search"
+                  autoComplete="off"
+                  spellCheck={false}
+                  placeholder={searchPlaceholder ?? ''}
+                  value={query}
+                  // 菜单打开后自动聚焦搜索框
+                  autoFocus
+                  onChange={(event) => setQuery(event.target.value)}
+                  onKeyDown={(event) => {
+                    // 回车选中第一项，Esc 关闭
+                    if (event.key === 'Escape') {
+                      setOpen(false)
+                    } else if (event.key === 'Enter' && !event.nativeEvent.isComposing) {
+                      const first = visible[0]
+                      if (first) {
+                        setOpen(false)
+                        setQuery('')
+                        onChange(first.value)
+                      }
+                    }
+                  }}
+                />
+              ) : null}
+              {visible.length === 0 ? (
+                <div className={styles.empty}>{searchPlaceholder}</div>
+              ) : null}
+              {visible.map((option) => (
                 <div
                   key={option.value}
                   role="option"
@@ -77,6 +126,7 @@ export const Select = <T extends string>({
                   className={styles.option}
                   onClick={() => {
                     setOpen(false)
+                    setQuery('')
                     onChange(option.value)
                   }}
                 >

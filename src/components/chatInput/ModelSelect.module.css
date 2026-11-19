@@ -1,18 +1,59 @@
 .wrapper {
   display: flex;
   align-items: center;
+  gap: 4px;
   min-width: 0;
-  max-width: 160px;
+  max-width: 220px;
 }
 
 /* 下拉按钮在狭窄的工具栏里要能被压缩 */
-.wrapper > button {
+.wrapper > button:first-child {
   min-width: 0;
   max-width: 100%;
 }
 
-.wrapper > button > span {
+.wrapper > button:first-child > span {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+
+/* 刷新按钮：与下拉同样高，圆形，不抢视觉焦点 */
+.refresh {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--dsw-alias-label-secondary);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color var(--ds-transition-duration) var(--ds-ease-in-out);
+
+  &:hover:not(:disabled) {
+    background: var(--dsw-alias-interactive-bg-hover);
+  }
+
+  &:disabled {
+    color: var(--dsw-alias-label-caption);
+    cursor: default;
+  }
+}
+
+/* 加载中旋转 */
+.spinning {
+  display: inline-block;
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }

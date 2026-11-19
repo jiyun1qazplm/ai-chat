@@ -98,3 +98,35 @@
     background: var(--dsw-alias-interactive-bg-hover);
   }
 }
+
+/* 可搜索下拉的搜索框 */
+.search {
+  box-sizing: border-box;
+  width: 100%;
+  height: 32px;
+  margin-bottom: 4px;
+  padding: 0 10px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 8px;
+  outline: none;
+  background: transparent;
+  color: var(--dsw-alias-label-primary);
+  font: inherit;
+  font-size: 13px;
+
+  &::placeholder {
+    color: var(--dsw-alias-label-caption);
+  }
+
+  &:focus {
+    border-color: var(--dsw-alias-brand-primary);
+  }
+}
+
+/* 搜索无结果时的提示 */
+.empty {
+  padding: 10px;
+  color: var(--dsw-alias-label-caption);
+  font-size: 13px;
+  text-align: center;
+}

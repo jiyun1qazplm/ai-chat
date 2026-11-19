@@ -235,4 +235,7 @@ export const zh = {
   reasoningProbeVerdict: '推理 {tokens} token（{hint}）',
   reasoningProbeShown: '有思考内容',
   reasoningProbeHidden: '未回传内容',
+  modelSearchPlaceholder: '搜索模型',
+  modelRefresh: '刷新模型列表',
+  modelRefreshFailed: '刷新失败，已保留原列表',
 } as const
