@@ -1154,8 +1154,17 @@ const streamReply = async (sessionId: string, initial: AssistantMessage, request
                   messages,
                   images: await collectImages(prepared, controller.signal),
                   search: async (query, searchSignal) => {
-                    const results = await searchWithTavily(tavilyKey ?? '', query, searchSignal)
-                    return { results, text: formatSearchResults(query, results) }
+                    const { results, answer } = await searchWithTavily(
+                      tavilyKey ?? '',
+                      query,
+                      searchSignal,
+                      {
+                        maxResults: settings.tavilyMaxResults,
+                        searchDepth: settings.tavilySearchDepth,
+                        includeAnswer: settings.tavilyIncludeAnswer,
+                      }
+                    )
+                    return { results, text: formatSearchResults(query, results, answer) }
                   },
                   signal: controller.signal,
                 })

@@ -31,6 +31,12 @@ type Settings = {
   openaiModel: string
   /** Tavily 联网搜索的 Key，兼容模式下打开搜索开关时使用 */
   tavilyApiKey: string | null
+  /** 每次搜索最多返回多少条结果（1-20） */
+  tavilyMaxResults: number
+  /** 搜索深度：basic 更快，advanced 更准但更慢更贵 */
+  tavilySearchDepth: 'basic' | 'advanced'
+  /** 是否让 Tavily 直接给出一段总结 */
+  tavilyIncludeAnswer: boolean
   /** 从兼容端点拉取到的可用模型列表，仅用于界面下拉 */
   openaiModels: string[]
   /**
@@ -65,6 +71,9 @@ const KEYS = {
   openaiApiKey: 'chat-demo:openai-api-key',
   openaiModel: 'chat-demo:openai-model',
   tavilyApiKey: 'chat-demo:tavily-api-key',
+  tavilyMaxResults: 'chat-demo:tavily-max-results',
+  tavilySearchDepth: 'chat-demo:tavily-search-depth',
+  tavilyIncludeAnswer: 'chat-demo:tavily-include-answer',
   openaiModels: 'chat-demo:openai-models',
   reasoningMode: 'chat-demo:reasoning-mode',
   reasoningOnMode: 'chat-demo:reasoning-on-mode',
@@ -183,6 +192,12 @@ const initialProvider = (): ApiProvider =>
 
 const initialOpenAIModel = (): string => read(KEYS.openaiModel)?.trim() || DEFAULT_OPENAI_MODEL
 
+/** 搜索结果条数限制在 1-20，Tavily 上限为 20 */
+const initialTavilyMaxResults = (): number => {
+  const value = Number(read(KEYS.tavilyMaxResults))
+  return Number.isInteger(value) && value >= 1 && value <= 20 ? value : 5
+}
+
 /** 拉取过的模型列表，损坏或不是数组时按空处理 */
 const initialOpenAIModels = (): string[] => {
   try {
@@ -200,6 +215,9 @@ export const useSettings = create<Settings>(() => ({
   openaiApiKey: read(KEYS.openaiApiKey),
   openaiModel: initialOpenAIModel(),
   tavilyApiKey: read(KEYS.tavilyApiKey),
+  tavilyMaxResults: initialTavilyMaxResults(),
+  tavilySearchDepth: read(KEYS.tavilySearchDepth) === 'advanced' ? 'advanced' : 'basic',
+  tavilyIncludeAnswer: read(KEYS.tavilyIncludeAnswer) === 'true',
   openaiModels: initialOpenAIModels(),
   reasoningMode: initialReasoningMode(),
   reasoningOnMode: initialReasoningOnMode(),
@@ -351,3 +369,25 @@ export const REASONING_MODES: { value: ReasoningMode; label: string }[] = [
   { value: 'template-thinking', label: 'chat_template_kwargs: thinking=false' },
   { value: 'none', label: '不发送任何参数' },
 ]
+
+export const setTavilyOptions = (options: {
+  maxResults?: number
+  searchDepth?: 'basic' | 'advanced'
+  includeAnswer?: boolean
+}) => {
+  const next: Partial<Settings> = {}
+  if (options.maxResults !== undefined) {
+    const value = Math.min(20, Math.max(1, Math.round(options.maxResults)))
+    write(KEYS.tavilyMaxResults, String(value))
+    next.tavilyMaxResults = value
+  }
+  if (options.searchDepth !== undefined) {
+    write(KEYS.tavilySearchDepth, options.searchDepth)
+    next.tavilySearchDepth = options.searchDepth
+  }
+  if (options.includeAnswer !== undefined) {
+    write(KEYS.tavilyIncludeAnswer, String(options.includeAnswer))
+    next.tavilyIncludeAnswer = options.includeAnswer
+  }
+  useSettings.setState(next)
+}

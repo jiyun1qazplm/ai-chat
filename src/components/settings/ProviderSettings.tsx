@@ -15,6 +15,7 @@ import {
   setOpenAIModel,
   setProvider,
   setTavilyApiKey,
+  setTavilyOptions,
   useSettings,
   type ApiProvider,
 } from '../../services/settings.js'
@@ -59,6 +60,7 @@ export const OpenAIEndpointFields = () => {
   const saved = useSettings()
   const [baseUrl, setBaseUrl] = useState(saved.openaiBaseUrl || DEFAULT_OPENAI_BASE_URL)
   const [apiKey, setApiKey] = useState(saved.openaiApiKey ?? '')
+  const models = useSettings((state) => state.openaiModels)
   const [model, setModel] = useState(saved.openaiModel || DEFAULT_OPENAI_MODEL)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -145,21 +147,46 @@ export const OpenAIEndpointFields = () => {
         </div>
 
         <div className={styles.label}>{t('openaiModel')}</div>
-        <div className={styles.apiKeyInput}>
-          <input
-            type="text"
-            autoComplete="off"
-            spellCheck={false}
-            placeholder={DEFAULT_OPENAI_MODEL}
-            value={model}
-            onChange={(event) => setModel(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter' && !event.nativeEvent.isComposing) {
-                void submit()
-              }
-            }}
-          />
-        </div>
+        {/* 有拉取到列表时可下拉选择，也可手动输入列表外的模型名 */}
+        {models.length > 0 ? (
+          <div className={styles.modelPicker}>
+            <Select
+              ariaLabel={t('openaiModel')}
+              value={model}
+              options={[
+                ...(models.includes(model)
+                  ? []
+                  : model.trim()
+                    ? [{ value: model, label: model }]
+                    : []),
+                ...models.map((id) => ({ value: id, label: id })),
+              ]}
+              searchable
+              searchPlaceholder={t('modelSearchPlaceholder')}
+              onChange={setModel}
+            />
+            <Button size="s" variant="outlined" onClick={() => setModel('')}>
+              {t('modelCustomInput')}
+            </Button>
+          </div>
+        ) : null}
+        {models.length === 0 || model === '' ? (
+          <div className={styles.apiKeyInput}>
+            <input
+              type="text"
+              autoComplete="off"
+              spellCheck={false}
+              placeholder={DEFAULT_OPENAI_MODEL}
+              value={model}
+              onChange={(event) => setModel(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' && !event.nativeEvent.isComposing) {
+                  void submit()
+                }
+              }}
+            />
+          </div>
+        ) : null}
 
         {error ? <div className={styles.error}>{error}</div> : null}
         <Button block disabled={saving || !dirty} onClick={() => void submit()}>
@@ -240,6 +267,75 @@ export const TavilyField = () => {
         <Button block disabled={saving || !dirty} onClick={() => void submit()}>
           {t(saving ? 'openaiSaving' : 'openaiSave')}
         </Button>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * 联网搜索的高级选项：结果条数、搜索深度、是否附带总结。
+ * 修改后立即保存，不需要点验证按钮。
+ */
+export const TavilyOptions = () => {
+  const t = useTranslate()
+  const maxResults = useSettings((state) => state.tavilyMaxResults)
+  const searchDepth = useSettings((state) => state.tavilySearchDepth)
+  const includeAnswer = useSettings((state) => state.tavilyIncludeAnswer)
+  return (
+    <div className={styles.cell}>
+      <div className={styles.apiKey}>
+        <div className={styles.label}>{t('tavilyOptions')}</div>
+
+        <div className={styles.reasoningRow}>
+          <span className={styles.reasoningLabel}>{t('tavilyMaxResults')}</span>
+          <div className={styles.stepper}>
+            <Button
+              size="s"
+              variant="outlined"
+              disabled={maxResults <= 1}
+              onClick={() => setTavilyOptions({ maxResults: maxResults - 1 })}
+            >
+              −
+            </Button>
+            <span className={styles.stepperValue}>{maxResults}</span>
+            <Button
+              size="s"
+              variant="outlined"
+              disabled={maxResults >= 20}
+              onClick={() => setTavilyOptions({ maxResults: maxResults + 1 })}
+            >
+              +
+            </Button>
+          </div>
+        </div>
+
+        <div className={styles.reasoningRow}>
+          <span className={styles.reasoningLabel}>{t('tavilySearchDepth')}</span>
+          <Select
+            ariaLabel={t('tavilySearchDepth')}
+            value={searchDepth}
+            options={[
+              { value: 'basic' as const, label: t('tavilyDepthBasic') },
+              { value: 'advanced' as const, label: t('tavilyDepthAdvanced') },
+            ]}
+            onChange={(value) => setTavilyOptions({ searchDepth: value })}
+          />
+        </div>
+
+        <div className={styles.reasoningRow}>
+          <span className={styles.reasoningLabel}>{t('tavilyIncludeAnswer')}</span>
+          <Select
+            ariaLabel={t('tavilyIncludeAnswer')}
+            value={includeAnswer ? 'on' : 'off'}
+            options={[
+              { value: 'off' as const, label: t('tavilyAnswerOff') },
+              { value: 'on' as const, label: t('tavilyAnswerOn') },
+            ]}
+            onChange={(value) => setTavilyOptions({ includeAnswer: value === 'on' })}
+          />
+        </div>
+
+        <div className={styles.description}>{t('tavilyOptionsDescription')}</div>
       </div>
     </div>
   )

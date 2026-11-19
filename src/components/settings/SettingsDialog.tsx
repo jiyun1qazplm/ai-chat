@@ -37,7 +37,12 @@ import { Modal } from '../base/Modal.js'
 import { Select } from '../base/Select.js'
 import { showToast } from '../base/toastState.js'
 import { ApiKeyConfirm, ApiKeyField, useApiKeyEditor } from './ApiKeyField.js'
-import { OpenAIEndpointFields, ProviderField, TavilyField } from './ProviderSettings.js'
+import {
+  OpenAIEndpointFields,
+  ProviderField,
+  TavilyField,
+  TavilyOptions,
+} from './ProviderSettings.js'
 import { closeSettings, useSettingsDialog, type SettingsSection } from './settingsDialogState.js'
 import styles from './Settings.module.css'
 
@@ -115,6 +120,7 @@ const SettingsContent = () => {
                 <>
                   <OpenAIEndpointFields />
                   <TavilyField />
+                  <TavilyOptions />
                 </>
               ) : (
                 <ApiKeyField editor={apiKeyEditor} />

@@ -250,4 +250,15 @@ export const en = {
   modelSearchPlaceholder: 'Search models',
   modelRefresh: 'Refresh model list',
   modelRefreshFailed: 'Refresh failed, kept the previous list',
+  modelCustomInput: 'Custom',
+  tavilyOptions: 'Search options',
+  tavilyMaxResults: 'Results per search',
+  tavilySearchDepth: 'Search depth',
+  tavilyDepthBasic: 'basic (fast)',
+  tavilyDepthAdvanced: 'advanced (accurate)',
+  tavilyIncludeAnswer: 'Include summary',
+  tavilyAnswerOn: 'On',
+  tavilyAnswerOff: 'Off',
+  tavilyOptionsDescription:
+    'More results give the model more context but cost more tokens; advanced is more accurate but slower',
 } satisfies Record<keyof typeof zh, string>

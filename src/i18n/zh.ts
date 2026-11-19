@@ -238,4 +238,15 @@ export const zh = {
   modelSearchPlaceholder: '搜索模型',
   modelRefresh: '刷新模型列表',
   modelRefreshFailed: '刷新失败，已保留原列表',
+  modelCustomInput: '自定义',
+  tavilyOptions: '搜索选项',
+  tavilyMaxResults: '每次结果数',
+  tavilySearchDepth: '搜索深度',
+  tavilyDepthBasic: 'basic（快）',
+  tavilyDepthAdvanced: 'advanced（准）',
+  tavilyIncludeAnswer: '附带总结',
+  tavilyAnswerOn: '开启',
+  tavilyAnswerOff: '关闭',
+  tavilyOptionsDescription:
+    '结果数越多模型可参考的信息越多，但消耗的 token 也更多；advanced 更准但更慢',
 } as const
