@@ -8,6 +8,7 @@ import {
   verifyOpenAIEndpoint,
 } from '../../services/api/openai.js'
 import { searchWithTavily } from '../../services/api/tavily.js'
+import { fetchOpenAIModels } from '../../services/api/openai.js'
 import {
   DEFAULT_OPENAI_MODEL,
   setOpenAIApiKey,
@@ -15,6 +16,7 @@ import {
   setOpenAIModel,
   setProvider,
   setTavilyApiKey,
+  setOpenAIModels,
   setTavilyOptions,
   useSettings,
   type ApiProvider,
@@ -64,6 +66,26 @@ export const OpenAIEndpointFields = () => {
   const [model, setModel] = useState(saved.openaiModel || DEFAULT_OPENAI_MODEL)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [refreshing, setRefreshing] = useState(false)
+  const [refreshError, setRefreshError] = useState(false)
+
+  /** 刷新模型列表：用当前输入框里的地址与 Key，方便改完立刻拉取 */
+  const refreshModels = async () => {
+    const url = normalizeBaseUrl(baseUrl)
+    const key = apiKey.trim()
+    if (!url || !key || refreshing) {
+      return
+    }
+    setRefreshing(true)
+    setRefreshError(false)
+    const list = await fetchOpenAIModels(url, key)
+    if (list.length > 0) {
+      setOpenAIModels(list)
+    } else {
+      setRefreshError(true)
+    }
+    setRefreshing(false)
+  }
 
   const dirty =
     normalizeBaseUrl(baseUrl) !== normalizeBaseUrl(saved.openaiBaseUrl) ||
@@ -168,8 +190,30 @@ export const OpenAIEndpointFields = () => {
             <Button size="s" variant="outlined" onClick={() => setModel('')}>
               {t('modelCustomInput')}
             </Button>
+            <button
+              type="button"
+              className={styles.modelRefresh}
+              aria-label={t('modelRefresh')}
+              title={refreshError ? t('modelRefreshFailed') : t('modelRefresh')}
+              disabled={refreshing}
+              onClick={() => void refreshModels()}
+            >
+              <span className={refreshing ? styles.spinning : undefined}>⟳</span>
+            </button>
           </div>
-        ) : null}
+        ) : (
+          // 还没拉到列表时也给出刷新入口
+          <div className={styles.modelPicker}>
+            <Button
+              size="s"
+              variant="outlined"
+              disabled={refreshing}
+              onClick={() => void refreshModels()}
+            >
+              {refreshing ? t('reasoningProbing') : t('modelRefresh')}
+            </Button>
+          </div>
+        )}
         {models.length === 0 || model === '' ? (
           <div className={styles.apiKeyInput}>
             <input

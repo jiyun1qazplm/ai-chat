@@ -576,3 +576,41 @@
   font-size: 14px;
   text-align: center;
 }
+
+/* 设置页里的模型刷新按钮 */
+.modelRefresh {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--dsw-alias-label-secondary);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    background: var(--dsw-alias-interactive-bg-hover);
+  }
+
+  &:disabled {
+    color: var(--dsw-alias-label-caption);
+    cursor: default;
+  }
+}
+
+.spinning {
+  display: inline-block;
+  animation: modelSpin 0.9s linear infinite;
+}
+
+@keyframes modelSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
