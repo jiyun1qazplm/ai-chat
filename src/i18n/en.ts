@@ -265,4 +265,13 @@ export const en = {
   settingsProviderClaude: 'Anthropic Claude',
   settingsProviderGeminiDescription: 'Native Gemini API with images and thinking budget',
   settingsProviderClaudeDescription: 'Native Claude API with images and thinking budget',
+  settingsTtsEngine: 'Speech engine',
+  settingsTtsBuiltin: 'Built-in (DeepSeek)',
+  settingsTtsExternal: 'External TTS',
+  settingsTtsBaseUrl: 'TTS endpoint',
+  settingsTtsModel: 'TTS model',
+  settingsTtsExternalVoice: 'Voice',
+  settingsTtsFormat: 'Audio format',
+  settingsTtsSpeed: 'Speed ({value}×)',
+  ttsTestSave: 'Preview and save',
 } satisfies Record<keyof typeof zh, string>
