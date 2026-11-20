@@ -262,4 +262,8 @@ export const zh = {
   settingsTtsFormat: '音频格式',
   settingsTtsSpeed: '语速（{value}×）',
   ttsTestSave: '试听并保存',
+  ttsProbeUndecodable: '浏览器无法解码这段音频，请换个格式（推荐 mp3）',
+  ttsProbeResult: '返回类型 {type}，共 {bytes} 字节，可解码：{decodable}',
+  ttsProbeYes: '是',
+  ttsProbeNo: '否',
 } as const
