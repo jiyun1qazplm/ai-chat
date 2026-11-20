@@ -5,9 +5,10 @@ import { classifyApiError } from '../../services/api/errors.js'
 import {
   DEFAULT_TTS_BASE_URL,
   normalizeTtsBaseUrl,
+  probeTts,
   TTS_FORMATS,
   TTS_VOICES,
-  verifyTts,
+  type TtsProbeResult,
 } from '../../services/api/tts.js'
 import { setTtsSettings, setTtsVoice, useSettings } from '../../services/settings.js'
 import { Button } from '../base/Button.js'
@@ -80,6 +81,9 @@ export const ExternalTtsFields = () => {
     return null
   }
 
+  const [probe, setProbe] = useState<TtsProbeResult | null>(null)
+
+  /** 试听：先保存配置，再真实播放一次，同时记录诊断结果 */
   const submit = async () => {
     if (saving) {
       return
@@ -89,24 +93,34 @@ export const ExternalTtsFields = () => {
       setError(t('openaiApiKeyRequired'))
       return
     }
+    const config = {
+      baseUrl: url,
+      apiKey: apiKey.trim(),
+      model: model.trim() || 'tts-1',
+      voice: voice.trim() || 'alloy',
+      format: saved.ttsFormat,
+      speed: saved.ttsSpeed,
+    }
     setSaving(true)
     setError(null)
+    setProbe(null)
     try {
-      await verifyTts({
-        baseUrl: url,
-        apiKey: apiKey.trim(),
-        model: model.trim() || 'tts-1',
-        voice: voice.trim() || 'alloy',
-        format: saved.ttsFormat,
-        speed: saved.ttsSpeed,
-      })
+      // 先保存，让「朗读」按钮也用上这套配置
       setTtsSettings({
         baseUrl: url,
-        apiKey: apiKey.trim(),
-        model: model.trim() || 'tts-1',
-        voice: voice.trim() || 'alloy',
+        apiKey: config.apiKey,
+        model: config.model,
+        voice: config.voice,
       })
-      showToast({ key: 'openaiSaved' })
+      const result = await probeTts(config)
+      setProbe(result)
+      if (!result.ok) {
+        setError(t('openaiVerificationFailed', { message: result.error ?? '' }))
+      } else if (!result.decodable) {
+        setError(result.error ?? t('ttsProbeUndecodable'))
+      } else {
+        showToast({ key: 'openaiSaved' })
+      }
     } catch (cause) {
       const kind = classifyApiError(cause)
       setError(
@@ -222,6 +236,15 @@ export const ExternalTtsFields = () => {
           </div>
         </div>
 
+        {probe ? (
+          <div className={styles.description}>
+            {t('ttsProbeResult', {
+              type: probe.contentType || '-',
+              bytes: probe.bytes,
+              decodable: probe.decodable ? t('ttsProbeYes') : t('ttsProbeNo'),
+            })}
+          </div>
+        ) : null}
         {error ? <div className={styles.error}>{error}</div> : null}
         <Button block disabled={saving} onClick={() => void submit()}>
           {t(saving ? 'openaiSaving' : 'ttsTestSave')}
