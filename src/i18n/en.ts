@@ -274,4 +274,8 @@ export const en = {
   settingsTtsFormat: 'Audio format',
   settingsTtsSpeed: 'Speed ({value}×)',
   ttsTestSave: 'Preview and save',
+  ttsProbeUndecodable: 'The browser cannot decode this audio. Try another format (mp3 recommended).',
+  ttsProbeResult: 'Content type {type}, {bytes} bytes, decodable: {decodable}',
+  ttsProbeYes: 'yes',
+  ttsProbeNo: 'no',
 } satisfies Record<keyof typeof zh, string>
