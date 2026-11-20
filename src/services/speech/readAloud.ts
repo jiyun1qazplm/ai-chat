@@ -130,7 +130,11 @@ export const toggleReadAloud = (
           return
         }
         const url = toAudioUrl(blob)
-        const audio = new Audio(url)
+        const audio = new Audio()
+        // 先克隆到 AudioContext 之外也无妨；这里用独立元素播放压缩音频
+        audio.preload = 'auto'
+        audio.src = url
+        audio.crossOrigin = 'anonymous'
         if (current?.controller === controller) {
           current.audio = audio
           current.url = url
@@ -138,8 +142,40 @@ export const toggleReadAloud = (
         audio.onplay = () => useReadAloud.setState({ status: 'playing' })
         audio.onended = () => finish(controller)
         audio.onerror = () => {
+          const code = audio.error?.code
+          const reason =
+            code === 1 ? '音轨被中止'
+            : code === 2 ? '网络错误'
+            : code === 3 ? '解码失败（格式可能不被支持）'
+            : code === 4 ? '音频格式不支持或被阻止'
+            : '未知原因'
           finish(controller)
-          onError(new Error('audio playback failed'))
+          onError(new Error(`播放失败：${reason}`))
+        }
+
+        // 等元数据就绪再播放，避免 src 刚设置时 play() 拿到空数据
+        await new Promise<void>((resolve, reject) => {
+          if (audio.readyState >= 1) {
+            resolve()
+            return
+          }
+          const onReady = () => {
+            audio.removeEventListener('loadedmetadata', onReady)
+            resolve()
+          }
+          audio.addEventListener('loadedmetadata', onReady, { once: true })
+          // 超时保护，避免设备不支持时一直挂着
+          setTimeout(() => {
+            audio.removeEventListener('loadedmetadata', onReady)
+            if (audio.readyState < 1) {
+              reject(new Error('音频加载超时，可能是格式不被支持'))
+            } else {
+              resolve()
+            }
+          }, 8000)
+        })
+        if (controller.signal.aborted) {
+          return
         }
         await audio.play()
       } catch (error) {
