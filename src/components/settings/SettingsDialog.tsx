@@ -24,6 +24,7 @@ import {
   setAccentAffectsBubble,
   setAccentColor,
   setDensity,
+  setEnterToSend,
   setFontScale,
   setLocale,
   setLocation,
@@ -407,6 +408,7 @@ const AppearanceSettings = () => {
   const accentAffectsBubble = useSettings((state) => state.accentAffectsBubble)
   const fontScale = useSettings((state) => state.fontScale)
   const density = useSettings((state) => state.density)
+  const enterToSend = useSettings((state) => state.enterToSend)
   return (
     <>
       <div className={styles.cell}>
@@ -488,6 +490,23 @@ const AppearanceSettings = () => {
             ]}
             onChange={setDensity}
           />
+        }
+      />
+      <SettingCell
+        label={t('settingsEnterToSend')}
+        description={t('settingsEnterToSendDesc')}
+        status={null}
+        action={
+          <button
+            type="button"
+            role="switch"
+            aria-checked={enterToSend}
+            aria-label={t('settingsEnterToSend')}
+            className={clsx(styles.switch, enterToSend && styles.switchOn)}
+            onClick={() => setEnterToSend(!enterToSend)}
+          >
+            <span className={styles.switchKnob} />
+          </button>
         }
       />
     </>
