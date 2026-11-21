@@ -77,24 +77,32 @@ export const setupTheme = () => {
 const applyAppearance = () => {
   const { accentColor, fontScale, density } = useSettings.getState()
   const root = document.documentElement
+  const body = document.body
 
+  /**
+   * 品牌色变量定义在 body.dark / body.light 上，
+   * 必须同样写在 body 的行内样式里才能覆盖它们；
+   * 写在 html 上会被那些更具体的选择器盖掉。
+   */
+  const brandVars = [
+    '--dsw-alias-brand-primary',
+    '--dsw-alias-brand-text',
+    '--dsw-alias-button-primary-fill',
+    '--dsw-alias-brand-primary-invert',
+    '--dsw-alias-button-primary-hover',
+  ]
   if (accentColor) {
-    // 只覆盖会被界面直接使用的品牌色，其余派生变量自动跟随
-    root.style.setProperty('--dsw-alias-brand-primary', accentColor)
-    root.style.setProperty('--dsw-alias-brand-text', accentColor)
-    root.style.setProperty('--dsw-alias-button-primary-fill', accentColor)
+    for (const name of brandVars) {
+      body.style.setProperty(name, accentColor)
+    }
   } else {
-    for (const name of [
-      '--dsw-alias-brand-primary',
-      '--dsw-alias-brand-text',
-      '--dsw-alias-button-primary-fill',
-    ]) {
-      root.style.removeProperty(name)
+    for (const name of brandVars) {
+      body.style.removeProperty(name)
     }
   }
 
   root.style.setProperty('--dsw-font-scale', String(fontScale))
-  document.body.setAttribute('data-density', density)
+  body.setAttribute('data-density', density)
 }
 
 /** 首次渲染前应用一次，之后随设置变化更新 */
