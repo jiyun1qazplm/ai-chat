@@ -75,7 +75,7 @@ export const setupTheme = () => {
  * 由样式表按属性调整间距。
  */
 const applyAppearance = () => {
-  const { accentColor, fontScale, density } = useSettings.getState()
+  const { accentColor, accentAffectsBubble, fontScale, density } = useSettings.getState()
   const root = document.documentElement
   const body = document.body
 
@@ -95,6 +95,9 @@ const applyAppearance = () => {
     for (const name of brandVars) {
       body.style.setProperty(name, accentColor)
     }
+  }
+  // 气泡是否跟随强调色由设置决定；关闭时回落到主题自带的固定配色
+  if (accentColor && accentAffectsBubble) {
     // 气泡也跟随强调色：用 color-mix 派生浅/深两档，保持与背景的层次
     body.style.setProperty(
       '--dsw-specific-bubble',
@@ -105,7 +108,11 @@ const applyAppearance = () => {
       `color-mix(in srgb, ${accentColor} 22%, var(--dsw-alias-bg-base))`
     )
   } else {
-    for (const name of [...brandVars, '--dsw-specific-bubble', '--dsw-specific-bubble-assistant']) {
+    body.style.removeProperty('--dsw-specific-bubble')
+    body.style.removeProperty('--dsw-specific-bubble-assistant')
+  }
+  if (!accentColor) {
+    for (const name of brandVars) {
       body.style.removeProperty(name)
     }
   }
