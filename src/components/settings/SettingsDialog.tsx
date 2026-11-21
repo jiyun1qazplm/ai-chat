@@ -437,13 +437,12 @@ const AppearanceSettings = () => {
         description={t('settingsBubbleFollowAccentDesc')}
         status={null}
         action={
-          // 未选强调色（默认蓝）时气泡本来就跟随默认蓝，此开关无意义，置灰
+          // 默认蓝同样可以切换：开启后气泡跟随默认蓝，关闭则保持主题原配色
           <button
             type="button"
             role="switch"
             aria-checked={accentAffectsBubble}
             aria-label={t('settingsBubbleFollowAccent')}
-            disabled={!accentColor}
             className={clsx(styles.switch, accentAffectsBubble && styles.switchOn)}
             onClick={() => setAccentAffectsBubble(!accentAffectsBubble)}
           >
