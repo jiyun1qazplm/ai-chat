@@ -304,8 +304,8 @@ export const useSettings = create<Settings>(() => ({
   reasoningOnMode: initialReasoningOnMode(),
   locale: initialLocale(),
   accentColor: read(KEYS.accentColor),
-  // 默认开启，与开关加入前的行为保持一致
-  accentAffectsBubble: read(KEYS.accentAffectsBubble) !== 'false',
+  // 默认关闭：气泡保持主题原配色，只有开启后才跟随强调色
+  accentAffectsBubble: read(KEYS.accentAffectsBubble) === 'true',
   // 仅在明确保存过「回车换行」时关闭，默认保持回车发送
   enterToSend: read(KEYS.enterToSend) !== 'false',
   fontScale: initialFontScale(),
@@ -446,7 +446,6 @@ export const ACCENT_COLORS: { value: string; key: string }[] = [
   { value: '#7c5cff', key: 'accentPurple' },
   { value: '#e5484d', key: 'accentRed' },
   { value: '#f5a623', key: 'accentOrange' },
-  { value: '#0a84ff', key: 'accentBlue' },
 ]
 
 export const setReasoningMode = (reasoningMode: ReasoningMode) => {
