@@ -200,6 +200,8 @@ export const zh = {
   modelSelect: '模型',
   modelListLoading: '正在获取模型列表',
   settingsAccentColor: '强调色',
+  settingsBubbleFollowAccent: '气泡跟随强调色',
+  settingsBubbleFollowAccentDesc: '修改强调色时，聊天气泡也一起变色；关闭后气泡保持主题原配色',
   accentDefault: '默认蓝',
   accentGreen: '绿色',
   accentPurple: '紫色',
