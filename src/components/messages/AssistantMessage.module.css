@@ -137,3 +137,15 @@
     --search-row-site-logo-color: var(--dsw-alias-interactive-bg-hover);
   }
 }
+
+/*
+ * AI 回复气泡：与用户气泡同款圆角与内边距，
+ * 底色取用户气泡色的加深版本，左右留白略少（回复通常更长）。
+ */
+.bubble {
+  box-sizing: border-box;
+  max-width: calc(100% - 24px);
+  padding: 10px 16px;
+  border-radius: 22px;
+  background-color: var(--dsw-specific-bubble-assistant);
+}
