@@ -210,7 +210,6 @@ export const zh = {
   accentPurple: '紫色',
   accentRed: '红色',
   accentOrange: '橙色',
-  accentBlue: '蓝色',
   settingsFontScale: '字号',
   settingsDensity: '消息间距',
   settingsDensityCompact: '紧凑',
