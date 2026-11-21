@@ -211,6 +211,9 @@ export const en = {
   modelSelect: 'Model',
   modelListLoading: 'Fetching model list',
   settingsAccentColor: 'Accent color',
+  settingsBubbleFollowAccent: 'Chat bubbles follow accent',
+  settingsBubbleFollowAccentDesc:
+    'Recolor chat bubbles along with the accent color; turn off to keep the theme colors',
   accentDefault: 'Default blue',
   accentGreen: 'Green',
   accentPurple: 'Purple',
