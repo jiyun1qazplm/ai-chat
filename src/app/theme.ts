@@ -121,8 +121,23 @@ const applyAppearance = () => {
   body.setAttribute('data-density', density)
 }
 
+/**
+ * 回车行为变量定义在根元素上，输入框和发送按钮都读取它：
+ * - Enter 换行：回车插入换行，改用发送按钮（或 Ctrl/Cmd+Enter）发送
+ * - Enter 发送：回车直接发送，Shift+Enter 换行（默认，保持原有习惯）
+ */
+const applyEnterBehavior = () => {
+  const { enterToSend } = useSettings.getState()
+  document.documentElement.setAttribute(
+    'data-enter-action',
+    enterToSend ? 'send' : 'newline'
+  )
+}
+
 /** 首次渲染前应用一次，之后随设置变化更新 */
 export const setupAppearance = () => {
   applyAppearance()
   useSettings.subscribe(applyAppearance)
+  applyEnterBehavior()
+  useSettings.subscribe(applyEnterBehavior)
 }
