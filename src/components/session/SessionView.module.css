@@ -40,13 +40,8 @@
   width: calc(var(--message-list-max-width) - 64px);
   max-width: calc(100% - 32px);
   margin: auto auto 0;
-  /* 不再铺整块底色，只用毛玻璃托住输入框：下方文字仍可被模糊遮住但透出背景 */
+  /* 输入框直接悬浮在页面上：不铺底色、不做毛玻璃，背后内容保持原样可见 */
   background: transparent;
-  -webkit-backdrop-filter: blur(14px) saturate(1.1);
-  backdrop-filter: blur(14px) saturate(1.1);
-  /* 模糊只在输入框外扩的一圈生效，渐隐到透明，避免出现硬边 */
-  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 18%, #000 100%);
-  mask-image: linear-gradient(to bottom, transparent 0%, #000 18%, #000 100%);
 }
 
 .caveat {
