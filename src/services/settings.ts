@@ -77,6 +77,8 @@ type Settings = {
   accentColor: string | null
   /** 修改强调色时是否让聊天气泡也跟随强调色 */
   accentAffectsBubble: boolean
+  /** 回车键行为：true 直接发送、Shift+Enter 换行；false 换行、改用发送按钮发送 */
+  enterToSend: boolean
   /** 正文字号倍数，1 为默认 */
   fontScale: number
   /** 消息列表的疏密：紧凑 / 标准 / 宽松 */
@@ -119,6 +121,7 @@ const KEYS = {
   locale: 'chat-demo:locale',
   accentColor: 'chat-demo:accent-color',
   accentAffectsBubble: 'chat-demo:accent-affects-bubble',
+  enterToSend: 'chat-demo:enter-to-send',
   fontScale: 'chat-demo:font-scale',
   density: 'chat-demo:density',
   location: 'chat-demo:location',
@@ -303,6 +306,8 @@ export const useSettings = create<Settings>(() => ({
   accentColor: read(KEYS.accentColor),
   // 默认开启，与开关加入前的行为保持一致
   accentAffectsBubble: read(KEYS.accentAffectsBubble) !== 'false',
+  // 仅在明确保存过「回车换行」时关闭，默认保持回车发送
+  enterToSend: read(KEYS.enterToSend) !== 'false',
   fontScale: initialFontScale(),
   density: initialDensity(),
   location: initialLocation(),
@@ -417,6 +422,11 @@ export const setAccentColor = (accentColor: string | null) => {
 export const setAccentAffectsBubble = (accentAffectsBubble: boolean) => {
   write(KEYS.accentAffectsBubble, String(accentAffectsBubble))
   useSettings.setState({ accentAffectsBubble })
+}
+
+export const setEnterToSend = (enterToSend: boolean) => {
+  write(KEYS.enterToSend, String(enterToSend))
+  useSettings.setState({ enterToSend })
 }
 
 export const setFontScale = (fontScale: number) => {
