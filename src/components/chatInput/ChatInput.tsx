@@ -64,6 +64,7 @@ const Input = ({ sessionId }: { sessionId: string | null }) => {
   const importingHistory = useChatStore((state) => state.importingHistory)
   const isMobile = useIsMobile()
   const search = useSettings((state) => state.search)
+  const enterToSend = useSettings((state) => state.enterToSend)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const togglesRef = useRef<HTMLDivElement>(null)
@@ -202,10 +203,15 @@ const Input = ({ sessionId }: { sessionId: string | null }) => {
             }
           }}
           onKeyDown={(event) => {
-            if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
-              event.preventDefault()
-              send()
+            if (event.key !== 'Enter' || event.shiftKey || event.nativeEvent.isComposing) {
+              return
             }
+            // 「回车换行」模式下回车只插入换行，Ctrl/⌘+Enter 仍可直接发送
+            if (!enterToSend && !(event.ctrlKey || event.metaKey)) {
+              return
+            }
+            event.preventDefault()
+            send()
           }}
           onPaste={(event) => {
             const files = Array.from(event.clipboardData.files)
@@ -294,15 +300,20 @@ const Input = ({ sessionId }: { sessionId: string | null }) => {
               <IconStopFill16 />
             </button>
           ) : (
-            <button
-              type="button"
-              className={clsx(styles.sendButton, !canSend && styles.disabled)}
-              aria-label={t('send')}
-              aria-disabled={!canSend}
-              onClick={send}
+            <Tooltip
+              content={enterToSend ? t('send') : t('sendTooltipEnterToSendOff')}
+              placement="top"
             >
-              <IconSendOutline16 />
-            </button>
+              <button
+                type="button"
+                className={clsx(styles.sendButton, !canSend && styles.disabled)}
+                aria-label={t('send')}
+                aria-disabled={!canSend}
+                onClick={send}
+              >
+                <IconSendOutline16 />
+              </button>
+            </Tooltip>
           )}
         </div>
       </div>
