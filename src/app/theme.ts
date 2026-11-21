@@ -95,8 +95,17 @@ const applyAppearance = () => {
     for (const name of brandVars) {
       body.style.setProperty(name, accentColor)
     }
+    // 气泡也跟随强调色：用 color-mix 派生浅/深两档，保持与背景的层次
+    body.style.setProperty(
+      '--dsw-specific-bubble',
+      `color-mix(in srgb, ${accentColor} 12%, var(--dsw-alias-bg-base))`
+    )
+    body.style.setProperty(
+      '--dsw-specific-bubble-assistant',
+      `color-mix(in srgb, ${accentColor} 22%, var(--dsw-alias-bg-base))`
+    )
   } else {
-    for (const name of brandVars) {
+    for (const name of [...brandVars, '--dsw-specific-bubble', '--dsw-specific-bubble-assistant']) {
       body.style.removeProperty(name)
     }
   }
