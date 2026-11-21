@@ -30,7 +30,9 @@
 }
 
 .inputContainer {
-  position: sticky;
+  position: absolute;
+  left: 0;
+  right: 0;
   bottom: 0;
   z-index: 10;
   display: flex;
@@ -39,9 +41,15 @@
   box-sizing: border-box;
   width: calc(var(--message-list-max-width) - 64px);
   max-width: calc(100% - 32px);
-  margin: auto auto 0;
-  /* 输入框直接悬浮在页面上，周围不铺任何底色或模糊，背后的文字保持清晰可见 */
+  margin: 0 auto;
+  /* 浮在消息之上，周围不铺底色，消息文字从两侧和下方透出 */
   background: transparent;
+  /* 外层不拦截点击，只有输入框本体可交互，两侧露出的消息仍能选中 */
+  pointer-events: none;
+}
+
+.inputContainer > * {
+  pointer-events: auto;
 }
 
 .caveat {
