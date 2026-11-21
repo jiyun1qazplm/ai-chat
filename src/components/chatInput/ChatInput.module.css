@@ -12,11 +12,18 @@
   border: 1px solid var(--dsw-alias-border-l2-darkmode-thin);
   /*
    * 实时毛玻璃：半透明底色 + 背景高斯模糊，背后滚动的消息被柔化后透出来。
-   * 用 color-mix 从主题底色派生，深浅色模式都保持与背景的层次。
+   * 不透明度压到 45%，背后有内容时能明显透出；同时补一层极淡的高光，
+   * 让底部没有内容经过时也保留玻璃质感。
    */
-  background: color-mix(in srgb, var(--dsw-specific-input-major) 68%, transparent);
-  -webkit-backdrop-filter: blur(20px) saturate(1.6);
-  backdrop-filter: blur(20px) saturate(1.6);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--dsw-alias-label-primary) 4%, transparent),
+      transparent 40%
+    ),
+    color-mix(in srgb, var(--dsw-specific-input-major) 45%, transparent);
+  -webkit-backdrop-filter: blur(24px) saturate(1.8);
+  backdrop-filter: blur(24px) saturate(1.8);
   overflow: hidden;
 }
 
