@@ -21,6 +21,7 @@ import { regionCodes, getRegionName, provinces } from '../../services/location.j
 import {
   ACCENT_COLORS,
   isChineseBrowser,
+  setAccentAffectsBubble,
   setAccentColor,
   setDensity,
   setFontScale,
@@ -403,6 +404,7 @@ const ThemeSetting = () => {
 const AppearanceSettings = () => {
   const t = useTranslate()
   const accentColor = useSettings((state) => state.accentColor) ?? ''
+  const accentAffectsBubble = useSettings((state) => state.accentAffectsBubble)
   const fontScale = useSettings((state) => state.fontScale)
   const density = useSettings((state) => state.density)
   return (
@@ -428,6 +430,25 @@ const AppearanceSettings = () => {
           </div>
         </div>
       </div>
+      <SettingCell
+        label={t('settingsBubbleFollowAccent')}
+        description={t('settingsBubbleFollowAccentDesc')}
+        status={null}
+        action={
+          // 未选强调色（默认蓝）时气泡本来就跟随默认蓝，此开关无意义，置灰
+          <button
+            type="button"
+            role="switch"
+            aria-checked={accentAffectsBubble}
+            aria-label={t('settingsBubbleFollowAccent')}
+            disabled={!accentColor}
+            className={clsx(styles.switch, accentAffectsBubble && styles.switchOn)}
+            onClick={() => setAccentAffectsBubble(!accentAffectsBubble)}
+          >
+            <span className={styles.switchKnob} />
+          </button>
+        }
+      />
       <SettingCell
         label={t('settingsFontScale')}
         status={null}
