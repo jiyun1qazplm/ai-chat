@@ -472,9 +472,6 @@
   &:nth-child(5) {
     background-color: #f5a623;
   }
-  &:nth-child(6) {
-    background-color: #0a84ff;
-  }
 }
 
 .accentSwatchSelected {
