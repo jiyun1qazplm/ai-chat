@@ -21,7 +21,7 @@
       color-mix(in srgb, var(--dsw-alias-label-primary) 4%, transparent),
       transparent 40%
     ),
-    color-mix(in srgb, var(--dsw-specific-input-major) 45%, transparent);
+    color-mix(in srgb, var(--dsw-specific-input-major) 28%, transparent);
   -webkit-backdrop-filter: blur(24px) saturate(1.8);
   backdrop-filter: blur(24px) saturate(1.8);
   overflow: hidden;
