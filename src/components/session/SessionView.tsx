@@ -35,7 +35,7 @@ export const SessionView = ({
         session={session}
         streaming={streaming}
         footer={
-          <div className={styles.inputContainer}>
+          <div className={styles.inputContainer} data-input-overlay>
             <ChatInput sessionId={session.id} />
             <div className={styles.caveat}>{t('contentCaveat')}</div>
           </div>
