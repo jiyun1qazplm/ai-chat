@@ -223,7 +223,6 @@ export const en = {
   accentPurple: 'Purple',
   accentRed: 'Red',
   accentOrange: 'Orange',
-  accentBlue: 'Blue',
   settingsFontScale: 'Text size',
   settingsDensity: 'Message spacing',
   settingsDensityCompact: 'Compact',
