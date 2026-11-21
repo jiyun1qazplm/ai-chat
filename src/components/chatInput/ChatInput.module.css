@@ -10,7 +10,13 @@
   line-height: var(--line-height);
   border-radius: 24px;
   border: 1px solid var(--dsw-alias-border-l2-darkmode-thin);
-  background: var(--dsw-specific-input-major);
+  /*
+   * 实时毛玻璃：半透明底色 + 背景高斯模糊，背后滚动的消息被柔化后透出来。
+   * 用 color-mix 从主题底色派生，深浅色模式都保持与背景的层次。
+   */
+  background: color-mix(in srgb, var(--dsw-specific-input-major) 68%, transparent);
+  -webkit-backdrop-filter: blur(20px) saturate(1.6);
+  backdrop-filter: blur(20px) saturate(1.6);
   overflow: hidden;
 }
 
