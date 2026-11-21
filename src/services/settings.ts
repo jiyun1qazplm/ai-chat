@@ -75,6 +75,8 @@ type Settings = {
   themePreference: ThemePreference
   /** 强调色（十六进制）；null 表示用默认蓝 */
   accentColor: string | null
+  /** 修改强调色时是否让聊天气泡也跟随强调色 */
+  accentAffectsBubble: boolean
   /** 正文字号倍数，1 为默认 */
   fontScale: number
   /** 消息列表的疏密：紧凑 / 标准 / 宽松 */
@@ -116,6 +118,7 @@ const KEYS = {
   reasoningOnMode: 'chat-demo:reasoning-on-mode',
   locale: 'chat-demo:locale',
   accentColor: 'chat-demo:accent-color',
+  accentAffectsBubble: 'chat-demo:accent-affects-bubble',
   fontScale: 'chat-demo:font-scale',
   density: 'chat-demo:density',
   location: 'chat-demo:location',
@@ -298,6 +301,8 @@ export const useSettings = create<Settings>(() => ({
   reasoningOnMode: initialReasoningOnMode(),
   locale: initialLocale(),
   accentColor: read(KEYS.accentColor),
+  // 默认开启，与开关加入前的行为保持一致
+  accentAffectsBubble: read(KEYS.accentAffectsBubble) !== 'false',
   fontScale: initialFontScale(),
   density: initialDensity(),
   location: initialLocation(),
@@ -407,6 +412,11 @@ export const isProviderReady = ({
 export const setAccentColor = (accentColor: string | null) => {
   write(KEYS.accentColor, accentColor)
   useSettings.setState({ accentColor })
+}
+
+export const setAccentAffectsBubble = (accentAffectsBubble: boolean) => {
+  write(KEYS.accentAffectsBubble, String(accentAffectsBubble))
+  useSettings.setState({ accentAffectsBubble })
 }
 
 export const setFontScale = (fontScale: number) => {
