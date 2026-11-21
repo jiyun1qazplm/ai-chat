@@ -40,7 +40,7 @@
   width: calc(var(--message-list-max-width) - 64px);
   max-width: calc(100% - 32px);
   margin: auto auto 0;
-  /* 输入框直接悬浮在页面上：不铺底色、不做毛玻璃，背后内容保持原样可见 */
+  /* 输入框直接悬浮在页面上，周围不铺任何底色或模糊，背后的文字保持清晰可见 */
   background: transparent;
 }
 
