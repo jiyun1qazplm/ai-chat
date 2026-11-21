@@ -145,6 +145,7 @@ export const en = {
   search: 'Search',
   uploadFile: 'Upload files',
   chatInputStopButtonTooltip: 'Stop',
+  sendTooltipEnterToSendOff: 'Send (Enter inserts a new line; Ctrl/⌘+Enter also sends)',
   uploadMaxMBSize: 'File exceeds the size limit ({size} MB). Please adjust and try again.',
   uploadMaxFiles: 'You can upload up to {count} files',
   uploadFileStatusUploading: 'Uploading...',
@@ -214,6 +215,9 @@ export const en = {
   settingsBubbleFollowAccent: 'Chat bubbles follow accent',
   settingsBubbleFollowAccentDesc:
     'Recolor chat bubbles along with the accent color; turn off to keep the theme colors',
+  settingsEnterToSend: 'Enter to send',
+  settingsEnterToSendDesc:
+    'On: Enter sends and Shift+Enter starts a new line. Off: Enter starts a new line, use the send button',
   accentDefault: 'Default blue',
   accentGreen: 'Green',
   accentPurple: 'Purple',
