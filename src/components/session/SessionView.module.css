@@ -64,10 +64,9 @@
 
 @media not all and (min-width: 768px) {
   .inputContainer {
-    position: relative;
-    bottom: auto;
-    flex-shrink: 0;
-    margin: 0 auto;
+    /* 移动端同样浮在消息之上：消息可以滚到输入框后面，
+       配合输入框自身的毛玻璃，滚过的文字会被实时模糊 */
+    box-sizing: border-box;
     padding-bottom: env(safe-area-inset-bottom);
   }
 }
