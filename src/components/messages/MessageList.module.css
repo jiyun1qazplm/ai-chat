@@ -40,3 +40,21 @@
 .column > * + * {
   margin-top: var(--dsw-density-gap, 8px);
 }
+
+/* 滚动区与浮起的输入框叠在一起：消息可以滚到输入框两侧和下方 */
+.wrap {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/*
+ * 底部留白，高度由输入框容器实测写入 --input-overlay-height，
+ * 保证最后一条消息能滚到输入框上方完整露出。
+ */
+.footerSpace {
+  height: var(--input-overlay-height, 0px);
+  flex: none;
+}
