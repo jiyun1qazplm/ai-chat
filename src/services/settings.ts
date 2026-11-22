@@ -83,6 +83,10 @@ type Settings = {
   fontScale: number
   /** 消息列表的疏密：紧凑 / 标准 / 宽松 */
   density: 'compact' | 'normal' | 'comfortable'
+  /** 聊天区背景图：本地图片的 data URL 或外部链接；null 表示不使用 */
+  chatBackground: string | null
+  /** 背景图上方遮罩的浓度 0-100，越大文字越清晰 */
+  chatBackgroundDim: number
   location: UserLocation | null
   ttsVoice: TtsVoice
   thinking: boolean
@@ -125,6 +129,8 @@ const KEYS = {
   enterToSend: 'chat-demo:enter-to-send',
   fontScale: 'chat-demo:font-scale',
   density: 'chat-demo:density',
+  chatBackground: 'chat-demo:chat-background',
+  chatBackgroundDim: 'chat-demo:chat-background-dim',
   location: 'chat-demo:location',
   themePreference: 'chat-demo:theme-preference',
   ttsVoice: 'chat-demo:tts-voice',
@@ -249,6 +255,17 @@ const initialTtsFormat = (): Settings['ttsFormat'] => {
   return saved === 'opus' || saved === 'aac' || saved === 'flac' || saved === 'wav' ? saved : 'mp3'
 }
 
+/** 背景遮罩浓度限制在 0-90，默认 40 */
+const initialBackgroundDim = (): number => {
+  const saved = read(KEYS.chatBackgroundDim)
+  // 没保存过时直接给默认值；否则 Number(null) 会得到 0，被误当成合法值
+  if (saved === null || saved.trim() === '') {
+    return 40
+  }
+  const value = Number(saved)
+  return Number.isFinite(value) && value >= 0 && value <= 90 ? value : 40
+}
+
 /** 语速限制在 0.25-4，非法值回到 1 */
 const initialTtsSpeed = (): number => {
   const value = Number(read(KEYS.ttsSpeed))
@@ -311,6 +328,8 @@ export const useSettings = create<Settings>(() => ({
   enterToSend: read(KEYS.enterToSend) !== 'false',
   fontScale: initialFontScale(),
   density: initialDensity(),
+  chatBackground: read(KEYS.chatBackground),
+  chatBackgroundDim: initialBackgroundDim(),
   location: initialLocation(),
   themePreference: initialThemePreference(),
   ttsVoice: initialTtsVoice(),
@@ -595,4 +614,15 @@ export const setTtsSettings = (patch: {
     next.ttsSpeed = speed
   }
   useSettings.setState(next)
+}
+
+export const setChatBackground = (chatBackground: string | null) => {
+  write(KEYS.chatBackground, chatBackground)
+  useSettings.setState({ chatBackground })
+}
+
+export const setChatBackgroundDim = (dim: number) => {
+  const value = Math.min(90, Math.max(0, Math.round(dim)))
+  write(KEYS.chatBackgroundDim, String(value))
+  useSettings.setState({ chatBackgroundDim: value })
 }
