@@ -55,11 +55,16 @@ export const getReplyStats = (
   if (total <= 0 && !(streaming && reply.generatedFrom !== undefined)) {
     return null
   }
-  const startedAt = reply.generatedFrom
-  const endedAt = streaming ? now : (reply.generatedTo ?? now)
-  const seconds = startedAt !== undefined ? (endedAt - startedAt) / 1000 : 0
-  // 回复很快时（不足 0.1 秒）分母过小会让速度虚高，此时不显示速度
-  const perSecond = seconds >= 0.1 ? total / seconds : null
+  /*
+   * 耗时来源按可靠性排序：
+   * 1. 首个内容块到收尾的精确跨度（generatedFrom / generatedTo）
+   * 2. 旧的或从存储重载的消息缺少这两项时，退回用消息创建时间兜底，
+   *    保证任何一条回复都能给出速度，而不是干脆不显示
+   */
+  const startedAt = reply.generatedFrom ?? reply.createdAt
+  const endedAt = streaming ? now : (reply.generatedTo ?? reply.generatedFrom ?? now)
+  const seconds = endedAt > startedAt ? (endedAt - startedAt) / 1000 : 0
+  const perSecond = seconds > 0 ? total / seconds : null
   return {
     total,
     perSecond,
