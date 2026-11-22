@@ -311,4 +311,5 @@ export const en = {
   settingsTopBlurOn: 'On',
   settingsTopBlurOff: 'Off',
   settingsTopBlurStrength: 'Blur strength',
+  settingsTopBlurHeight: 'Blur coverage height',
 } satisfies Record<keyof typeof zh, string>
