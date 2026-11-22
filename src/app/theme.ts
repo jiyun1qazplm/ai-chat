@@ -97,15 +97,21 @@ const applyAppearance = () => {
     }
   }
   // 气泡是否跟随强调色由设置决定；关闭时回落到主题自带的固定配色
-  if (accentColor && accentAffectsBubble) {
-    // 气泡也跟随强调色：用 color-mix 派生浅/深两档，保持与背景的层次
+  if (accentAffectsBubble) {
+    /*
+     * 气泡跟随强调色：用 color-mix 派生浅/深两档，保持与背景的层次。
+     * 未选颜色时 accentColor 为空字符串（表示默认蓝），此时改用主题的品牌色变量，
+     * 这样「默认蓝」也能正常给气泡上色，而不是被当成没设置而跳过。
+     */
+    // 默认蓝取主题品牌色的实际色值：深浅色模式下都是这组蓝，避免引用 body 上的变量造成自引用
+    const source = accentColor || 'rgb(57, 100, 254)'
     body.style.setProperty(
       '--dsw-specific-bubble',
-      `color-mix(in srgb, ${accentColor} 12%, var(--dsw-alias-bg-base))`
+      `color-mix(in srgb, ${source} 12%, var(--dsw-alias-bg-base))`
     )
     body.style.setProperty(
       '--dsw-specific-bubble-assistant',
-      `color-mix(in srgb, ${accentColor} 22%, var(--dsw-alias-bg-base))`
+      `color-mix(in srgb, ${source} 22%, var(--dsw-alias-bg-base))`
     )
   } else {
     body.style.removeProperty('--dsw-specific-bubble')
