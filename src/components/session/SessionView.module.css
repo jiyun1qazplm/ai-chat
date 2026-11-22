@@ -86,8 +86,8 @@
   right: 0;
   top: 0;
   z-index: 5;
-  /* 高度取屏幕的一半，跟随不同机型自动伸缩 */
-  height: var(--chat-top-blur-height, 56vh);
+  /* 到画面约四分之一处结束，不同机型按视口高度自适应 */
+  height: var(--chat-top-blur-height, 24vh);
   pointer-events: none;
   -webkit-backdrop-filter: blur(var(--chat-top-blur, 14px));
   backdrop-filter: blur(var(--chat-top-blur, 14px));
@@ -95,17 +95,15 @@
   -webkit-mask-image: linear-gradient(
     to bottom,
     #000 0%,
-    rgba(0, 0, 0, 0.92) 30%,
-    rgba(0, 0, 0, 0.55) 60%,
-    rgba(0, 0, 0, 0.2) 82%,
+    rgba(0, 0, 0, 0.85) 45%,
+    rgba(0, 0, 0, 0.4) 75%,
     transparent 100%
   );
   mask-image: linear-gradient(
     to bottom,
     #000 0%,
-    rgba(0, 0, 0, 0.92) 30%,
-    rgba(0, 0, 0, 0.55) 60%,
-    rgba(0, 0, 0, 0.2) 82%,
+    rgba(0, 0, 0, 0.85) 45%,
+    rgba(0, 0, 0, 0.4) 75%,
     transparent 100%
   );
 }
