@@ -1,6 +1,7 @@
 import clsx from 'clsx'
-import { useMemo, useRef, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { useIsMobile } from '../../app/viewport.js'
 import { useAnchoredPosition, useDismiss } from './anchored.js'
 import { IconCheckOutline16, IconChevronDownOutline14 } from './icons.js'
 import styles from './Select.module.css'
@@ -36,7 +37,7 @@ export const Select = <T extends string>({
   const [open, setOpen] = useState(false)
   /** 菜单内的搜索关键词，关闭菜单时清空 */
   const [query, setQuery] = useState('')
-  const searchRef = useRef<HTMLInputElement>(null)
+  const isMobile = useIsMobile()
 
   // 按关键词过滤；搜索不区分大小写，空关键词显示全部
   const visible = useMemo(() => {
@@ -89,15 +90,15 @@ export const Select = <T extends string>({
             >
               {searchable ? (
                 <input
-                  ref={searchRef}
                   className={styles.search}
                   type="search"
                   autoComplete="off"
                   spellCheck={false}
                   placeholder={searchPlaceholder ?? ''}
                   value={query}
-                  // 菜单打开后自动聚焦搜索框
-                  autoFocus
+                  // 桌面端打开菜单即聚焦，方便直接输入；
+                  // 移动端不自动聚焦，避免一点开就弹出键盘挡住选项
+                  autoFocus={!isMobile}
                   onChange={(event) => setQuery(event.target.value)}
                   onKeyDown={(event) => {
                     // 回车选中第一项，Esc 关闭
