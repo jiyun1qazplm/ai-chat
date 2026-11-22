@@ -294,4 +294,5 @@ export const zh = {
   settingsTopBlurOn: '开启',
   settingsTopBlurOff: '关闭',
   settingsTopBlurStrength: '模糊强度',
+  settingsTopBlurHeight: '模糊覆盖高度',
 } as const
