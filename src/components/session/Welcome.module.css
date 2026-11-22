@@ -47,7 +47,8 @@
     justify-content: flex-end;
     max-width: none;
     margin: 0;
-    padding: 0 16px env(safe-area-inset-bottom);
+    /* 顶部留出悬浮顶栏的位置 */
+    padding: 72px 16px env(safe-area-inset-bottom);
   }
 
   .greeting {
