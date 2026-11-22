@@ -48,6 +48,7 @@ import {
 } from './ProviderSettings.js'
 import { closeSettings, useSettingsDialog, type SettingsSection } from './settingsDialogState.js'
 import { ExternalTtsFields, TtsEngineSetting } from './TtsSettings.js'
+import { BackgroundSetting } from './BackgroundSetting.js'
 import styles from './Settings.module.css'
 
 /**
@@ -113,6 +114,7 @@ const SettingsContent = () => {
             <>
               <ThemeSetting />
               <AppearanceSettings />
+              <BackgroundSetting />
               <LocaleSetting />
               <TtsEngineSetting />
               <ExternalTtsFields />
