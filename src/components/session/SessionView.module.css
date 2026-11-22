@@ -15,7 +15,8 @@
   height: 60px;
   padding: 12px 18px 0;
   box-sizing: border-box;
-  background: var(--dsw-alias-bg-base);
+/* 不铺底色：背景图（画在 .content 上）要能从标题栏这一层透出来 */
+  background: transparent;
 }
 
 .title {
