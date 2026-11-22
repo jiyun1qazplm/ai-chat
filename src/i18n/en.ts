@@ -306,4 +306,9 @@ export const en = {
     'Drag the box to pick the visible area. The chat area is about {ratio}:1, so a box closer to that ratio will stretch less.',
   cropConfirm: 'Confirm and save',
   cropSize: 'Selection covers {w}% × {h}% of the image',
+  settingsBottomBlur: 'Bottom blur',
+  settingsBottomBlurDesc: 'Messages fade out smoothly as they scroll behind the input box',
+  settingsBottomBlurOn: 'On',
+  settingsBottomBlurOff: 'Off',
+  settingsBottomBlurStrength: 'Blur strength',
 } satisfies Record<keyof typeof zh, string>
