@@ -152,7 +152,6 @@ export const AssistantMessage = memo(function AssistantMessage({
       {streaming ? null : (
         <div className={styles.bottom}>
           <BranchSwitcher versions={versions} disabled={busy} onSelect={onSelectVersion} />
-          <ReplyStats message={message} streaming={false} />
           <div className={clsx(styles.actions, isLast && styles.alwaysShow)}>
             {copyText ? <CopyButton text={copyText} /> : null}
             {responseText && !refused ? (
@@ -183,6 +182,10 @@ export const AssistantMessage = memo(function AssistantMessage({
               {t('continueGenerating')}
             </Button>
           ) : null}
+          {/* token 统计靠右对齐 */}
+          <span className={styles.bottomStats}>
+            <ReplyStats message={message} streaming={false} />
+          </span>
         </div>
       )}
     </div>
