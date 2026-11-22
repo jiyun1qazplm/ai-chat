@@ -28,7 +28,7 @@
 }
 
 .bubble {
-  max-width: calc(100% - 88px);
+  max-width: calc(100% - 56px);
   box-sizing: border-box;
   padding: 10px 16px;
   border-radius: 22px;
@@ -42,7 +42,7 @@
 
 @media not all and (min-width: 440px) {
   .bubble {
-    max-width: calc(100% - 68px);
+    max-width: calc(100% - 36px);
   }
 }
 
