@@ -167,6 +167,8 @@ export const MessageList = ({
         {/* 滚动容器铺满整个区域，消息可以一直滚到输入框两侧与下方 */}
         <div ref={isMobile ? undefined : scrollRef} className={styles.container}>
           <div ref={isMobile ? scrollRef : undefined} className={styles.scroll}>
+            {/* 顶部占位：首条消息从悬浮顶栏下方开始，向上滚动时这块被滚出视口 */}
+            <div className={styles.topSpace} aria-hidden />
             <div ref={contentRef} className={styles.column}>
               {messages.map((message, index) =>
                 message.role === 'user' ? (
