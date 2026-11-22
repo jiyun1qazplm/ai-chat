@@ -51,7 +51,8 @@ export const getReplyStats = (
   const hasReported = reported !== undefined && reported > 0
   // 生成中接口还没返回用量，只能用估算值；结束后优先用精确值
   const total = !streaming && hasReported ? reported : estimatedTokens
-  if (total <= 0) {
+  // 生成中即使还没有文字，只要开始计时就显示（速度为 0），让用户知道统计在跑
+  if (total <= 0 && !(streaming && reply.generatedFrom !== undefined)) {
     return null
   }
   const startedAt = reply.generatedFrom
