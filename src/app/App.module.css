@@ -27,10 +27,7 @@
  */
 .content[data-has-background='true'] {
   background-image:
-    linear-gradient(
-      var(--chat-bg-dim-color, transparent),
-      var(--chat-bg-dim-color, transparent)
-    ),
+    linear-gradient(var(--chat-bg-dim-color, transparent), var(--chat-bg-dim-color, transparent)),
     var(--chat-bg-image, none);
   background-size:
     100% 100%,
