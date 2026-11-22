@@ -134,10 +134,7 @@ const applyAppearance = () => {
  */
 const applyEnterBehavior = () => {
   const { enterToSend } = useSettings.getState()
-  document.documentElement.setAttribute(
-    'data-enter-action',
-    enterToSend ? 'send' : 'newline'
-  )
+  document.documentElement.setAttribute('data-enter-action', enterToSend ? 'send' : 'newline')
 }
 
 /** 首次渲染前应用一次，之后随设置变化更新 */
