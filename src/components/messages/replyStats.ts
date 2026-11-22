@@ -21,27 +21,36 @@ export const estimateTokens = (text: string): number => {
   return cjk + Math.ceil(other / 4)
 }
 
-/**
- * 统计一条回复的 token 用量与生成速度。
- * - total：接口返回的 output_tokens 最准确；没有时用文本估算
- * - perSecond：总 token ÷ 生成耗时；耗时取首个内容块到收尾的时间跨度
- * - live：仍在生成中，界面按估算值动态刷新
- */
 export type ReplyStats = {
+  /** 迄今输出的 token 数（生成中为估算，结束后优先用接口返回值） */
   total: number
+  /** 每秒 token 数；耗时不足 0.5 秒或无计时信息时为 null */
   perSecond: number | null
+  /** total 是否为估算值 */
   estimated: boolean
+  /** 是否仍在生成中 */
   live: boolean
 }
 
+/**
+ * 统计一条回复的 token 用量与生成速度。
+ *
+ * 速度的含义是「这段时间里平均每秒输出多少 token」：
+ * - 生成中：已输出内容 ÷ 从首个内容块到「现在」的时长，每次刷新都会重算，
+ *   所以数值会随生成快慢实时变化；
+ * - 结束后：接口返回的 output_tokens ÷ 整段生成时长，定格为本次的平均速度。
+ */
 export const getReplyStats = (
   reply: AssistantMessage,
   streaming: boolean,
   now: number
 ): ReplyStats | null => {
   const text = reply.blocks.map((block) => (block.type === 'text' ? block.text : '')).join('')
+  const estimatedTokens = estimateTokens(text)
   const reported = reply.usage?.output_tokens
-  const total = reported && reported > 0 ? reported : estimateTokens(text)
+  const hasReported = reported !== undefined && reported > 0
+  // 生成中接口还没返回用量，只能用估算值；结束后优先用精确值
+  const total = !streaming && hasReported ? reported : estimatedTokens
   if (total <= 0) {
     return null
   }
@@ -51,7 +60,7 @@ export const getReplyStats = (
   return {
     total,
     perSecond: seconds >= 0.5 ? total / seconds : null,
-    estimated: !(reported && reported > 0),
+    estimated: !(!streaming && hasReported),
     live: streaming && reply.status === 'streaming',
   }
 }
