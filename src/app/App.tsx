@@ -77,7 +77,7 @@ export const App = () => {
 
   return (
     <>
-      <div ref={frameRef} className={styles.frame}>
+      <div ref={frameRef} className={styles.frame} data-has-background={hasBackground ? 'true' : undefined}>
         {isMobile ? <MobileSider /> : siderCollapsed ? null : <Sider />}
         <main className={styles.main}>
           {saveError ? (
@@ -93,7 +93,7 @@ export const App = () => {
               </Button>
             </div>
           ) : null}
-          <div className={styles.content} data-has-background={hasBackground ? 'true' : undefined}>
+          <div className={styles.content}>
             {siderCollapsed ? <CollapsedSider /> : null}
             {!ready || (activeId !== null && !session) ? (
               <div className={styles.loadingView}>
