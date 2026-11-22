@@ -31,7 +31,7 @@
 
 .column {
   width: calc(var(--message-list-max-width) - 2 * var(--message-list-padding-horizontal));
-  max-width: calc(100% - 40px);
+  max-width: calc(100% - 24px);
   margin: 0 auto;
   padding-bottom: 24px;
 }
