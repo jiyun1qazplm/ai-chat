@@ -35,9 +35,7 @@ export const ReplyStats = ({
     return null
   }
   const rate =
-    stats.perSecond === null
-      ? null
-      : t('replyStatsRate', { rate: stats.perSecond.toFixed(1) })
+    stats.perSecond === null ? null : t('replyStatsRate', { rate: stats.perSecond.toFixed(1) })
   return (
     <span className={styles.stats} title={stats.estimated ? t('replyStatsEstimated') : undefined}>
       {t('replyStatsTotal', { tokens: stats.total.toLocaleString() })}
