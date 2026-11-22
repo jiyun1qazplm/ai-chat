@@ -33,9 +33,17 @@
   width: calc(var(--message-list-max-width) - 2 * var(--message-list-padding-horizontal));
   max-width: calc(100% - 24px);
   margin: 0 auto;
-  /* 顶部留出悬浮顶栏的高度；滚动时消息仍会从顶栏后面穿过 */
-  padding-top: 72px;
   padding-bottom: 24px;
+}
+
+/*
+ * 顶部留白单独作为可滚动的占位块，而不是 .column 的 padding：
+ * padding 会被算进滚动高度底部，导致页面滚到底时上方仍卡着留白、消息永远到不了顶栏后面。
+ * 用占位块后，用户向上滚动时这块会被滚出视口，消息自然穿过悬浮的毛玻璃顶栏。
+ */
+.topSpace {
+  flex: none;
+  height: 72px;
 }
 
 /* 疏密设置：相邻消息之间追加间距 */
