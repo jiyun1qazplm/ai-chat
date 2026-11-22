@@ -1,0 +1,10 @@
+/* 回复底部的 token 统计：次要信息，不抢操作按钮的注意力 */
+.stats {
+  flex: none;
+  color: var(--dsw-alias-label-caption);
+  font-size: 12px;
+  line-height: 18px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  cursor: default;
+}
