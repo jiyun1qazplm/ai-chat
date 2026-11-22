@@ -113,3 +113,11 @@
 body[data-top-blur='off'] .topFade {
   display: none;
 }
+
+/*
+ * 设了聊天背景图时同样隐藏这层：
+ * 模糊层会把自己下面的背景图糊成一块暗色，标题区域看起来像被黑色盖住。
+ */
+:global([data-has-background='true']) .topFade {
+  display: none;
+}
