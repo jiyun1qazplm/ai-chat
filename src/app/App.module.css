@@ -18,9 +18,6 @@
   position: relative;
   flex: 1;
   min-height: 0;
-  /* 临时调试：标出背景图所在层的边界 */
-  outline: 4px solid lime;
-  outline-offset: -4px;
 }
 
 /*
