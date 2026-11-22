@@ -58,9 +58,11 @@ export const getReplyStats = (
   const startedAt = reply.generatedFrom
   const endedAt = streaming ? now : (reply.generatedTo ?? now)
   const seconds = startedAt !== undefined ? (endedAt - startedAt) / 1000 : 0
+  // 回复很快时（不足 0.1 秒）分母过小会让速度虚高，此时不显示速度
+  const perSecond = seconds >= 0.1 ? total / seconds : null
   return {
     total,
-    perSecond: seconds >= 0.5 ? total / seconds : null,
+    perSecond,
     estimated: !(!streaming && hasReported),
     live: streaming && reply.status === 'streaming',
   }
