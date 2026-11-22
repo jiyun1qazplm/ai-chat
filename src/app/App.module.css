@@ -21,49 +21,22 @@
 }
 
 /*
- * 聊天区背景图：下层是图片，上层是半透明遮罩（颜色跟随主题底色）。
- * 没有设置背景图时 --chat-bg-image 为空，这里不产生任何效果。
+ * 聊天区背景图：直接画在 .content 自己的背景上，不引入额外图层，也不动子元素布局。
+ * 两层背景——上层是半透明主题底色（遮罩），下层是图片。
+ * 没有设置背景图时 --chat-bg-image 为空，这里保持透明。
  */
-.content::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
+.content[data-has-background='true'] {
   background-image:
-    linear-gradient(var(--dsw-alias-bg-base), var(--dsw-alias-bg-base)), var(--chat-bg-image, none);
-  background-size: cover;
+    linear-gradient(
+      var(--chat-bg-dim-color, transparent),
+      var(--chat-bg-dim-color, transparent)
+    ),
+    var(--chat-bg-image, none);
+  background-size:
+    100% 100%,
+    cover;
   background-position: center;
   background-repeat: no-repeat;
-  opacity: var(--chat-bg-image-opacity, 0);
-}
-
-/*
- * 有背景图时改为「图片 + 遮罩」。
- * 遮罩用主题底色叠在图片上方，透明度由 --chat-bg-dim 控制（0-1）。
- * 这里不把颜色写进 gradient，而是给整层设 opacity 之外再叠一层伪元素，
- * 避免 color-mix + calc 在旧浏览器上失效。
- */
-.content[data-has-background='true']::before {
-  opacity: 1;
-  background-image: var(--chat-bg-image);
-}
-
-/* 遮罩层：单独一片，透明度即遮罩浓度 */
-.content[data-has-background='true']::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  background-color: var(--dsw-alias-bg-base);
-  opacity: var(--chat-bg-dim, 0.4);
-}
-
-/* 消息与输入框要压在背景之上 */
-.content[data-has-background='true'] > * {
-  position: relative;
-  z-index: 1;
 }
 
 .saveError {
