@@ -1,9 +1,14 @@
-/* 回复底部的 token 统计：次要信息，不抢操作按钮的注意力 */
+/* 回复底部的 token 统计：次要信息，但需要清晰可读 */
 .stats {
+  display: inline-flex;
+  align-items: center;
   flex: none;
-  color: var(--dsw-alias-label-caption);
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--dsw-alias-label-primary) 8%, transparent);
+  color: var(--dsw-alias-label-secondary);
   font-size: 12px;
-  line-height: 18px;
+  line-height: 16px;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
   cursor: default;
