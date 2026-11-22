@@ -87,6 +87,11 @@ type Settings = {
   chatBackground: string | null
   /** 背景图上方遮罩的浓度 0-100，越大文字越清晰 */
   chatBackgroundDim: number
+  /**
+   * 背景图的取景：把原图按 viewBox 的百分比区域裁切后铺满聊天区。
+   * null 表示整张图铺满（cover）。裁剪界面确认后写入。
+   */
+  chatBackgroundCrop: { x: number; y: number; width: number; height: number } | null
   location: UserLocation | null
   ttsVoice: TtsVoice
   thinking: boolean
@@ -131,6 +136,7 @@ const KEYS = {
   density: 'chat-demo:density',
   chatBackground: 'chat-demo:chat-background',
   chatBackgroundDim: 'chat-demo:chat-background-dim',
+  chatBackgroundCrop: 'chat-demo:chat-background-crop',
   location: 'chat-demo:location',
   themePreference: 'chat-demo:theme-preference',
   ttsVoice: 'chat-demo:tts-voice',
@@ -255,6 +261,25 @@ const initialTtsFormat = (): Settings['ttsFormat'] => {
   return saved === 'opus' || saved === 'aac' || saved === 'flac' || saved === 'wav' ? saved : 'mp3'
 }
 
+/** 读取已保存的裁剪区域；损坏时按未裁剪处理 */
+const initialBackgroundCrop = (): Settings['chatBackgroundCrop'] => {
+  try {
+    const parsed = JSON.parse(read(KEYS.chatBackgroundCrop) ?? 'null') as unknown
+    if (
+      typeof parsed === 'object' &&
+      parsed !== null &&
+      ['x', 'y', 'width', 'height'].every(
+        (k) => typeof (parsed as Record<string, unknown>)[k] === 'number'
+      )
+    ) {
+      return parsed as Settings['chatBackgroundCrop']
+    }
+  } catch {
+    // 忽略损坏的数据
+  }
+  return null
+}
+
 /** 背景遮罩浓度限制在 0-90，默认 40 */
 const initialBackgroundDim = (): number => {
   const saved = read(KEYS.chatBackgroundDim)
@@ -330,6 +355,7 @@ export const useSettings = create<Settings>(() => ({
   density: initialDensity(),
   chatBackground: read(KEYS.chatBackground),
   chatBackgroundDim: initialBackgroundDim(),
+  chatBackgroundCrop: initialBackgroundCrop(),
   location: initialLocation(),
   themePreference: initialThemePreference(),
   ttsVoice: initialTtsVoice(),
@@ -618,7 +644,14 @@ export const setTtsSettings = (patch: {
 
 export const setChatBackground = (chatBackground: string | null) => {
   write(KEYS.chatBackground, chatBackground)
-  useSettings.setState({ chatBackground })
+  // 换图时旧取景不再适用
+  write(KEYS.chatBackgroundCrop, null)
+  useSettings.setState({ chatBackground, chatBackgroundCrop: null })
+}
+
+export const setChatBackgroundCrop = (chatBackgroundCrop: Settings['chatBackgroundCrop']) => {
+  write(KEYS.chatBackgroundCrop, chatBackgroundCrop ? JSON.stringify(chatBackgroundCrop) : null)
+  useSettings.setState({ chatBackgroundCrop })
 }
 
 export const setChatBackgroundDim = (dim: number) => {
