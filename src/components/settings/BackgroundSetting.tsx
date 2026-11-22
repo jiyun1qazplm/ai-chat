@@ -1,6 +1,12 @@
 import { useRef, useState } from 'react'
 import { useTranslate } from '../../i18n/index.js'
-import { setChatBackground, setChatBackgroundDim, useSettings } from '../../services/settings.js'
+import {
+  setChatBackground,
+  setChatBackgroundCrop,
+  setChatBackgroundDim,
+  useSettings,
+} from '../../services/settings.js'
+import { BackgroundCropModal, type CropRect } from './BackgroundCrop.js'
 import { Button } from '../base/Button.js'
 import { showToast } from '../base/toastState.js'
 import styles from './Settings.module.css'
@@ -28,6 +34,12 @@ export const BackgroundSetting = () => {
   const fileRef = useRef<HTMLInputElement>(null)
   const [url, setUrl] = useState('')
   const [busy, setBusy] = useState(false)
+  /** 正在裁剪的图片；确认后才写入设置 */
+  const [pending, setPending] = useState<string | null>(null)
+  const crop = useSettings((state) => state.chatBackgroundCrop)
+  /** 聊天区大致宽高比，用于提示取景比例 */
+  const aspect =
+    typeof window === 'undefined' ? 1.6 : Math.max(0.6, window.innerWidth / window.innerHeight)
 
   const pickFile = async (file: File) => {
     if (file.size > MAX_IMAGE_MB * 1024 * 1024) {
@@ -37,8 +49,8 @@ export const BackgroundSetting = () => {
     setBusy(true)
     try {
       const dataUrl = await toDataUrl(file)
-      setChatBackground(dataUrl)
-      showToast({ key: 'backgroundSaved' })
+      // 先进裁剪界面，确认后再写入设置
+      setPending(dataUrl)
     } catch {
       showToast({ key: 'backgroundFailed', type: 'error' })
     } finally {
@@ -51,9 +63,48 @@ export const BackgroundSetting = () => {
     if (!value) {
       return
     }
-    setChatBackground(value)
+    setPending(value)
     setUrl('')
-    showToast({ key: 'backgroundSaved' })
+  }
+
+  /** 按裁剪区域生成新图，聊天区直接 cover 铺满即可 */
+  const applyCrop = async (rect: CropRect) => {
+    const src = pending
+    setPending(null)
+    if (!src) {
+      return
+    }
+    setBusy(true)
+    try {
+      const image = await loadImage(src)
+      const canvas = document.createElement('canvas')
+      canvas.width = Math.max(1, Math.round(image.naturalWidth * rect.width))
+      canvas.height = Math.max(1, Math.round(image.naturalHeight * rect.height))
+      const ctx = canvas.getContext('2d')
+      if (!ctx) {
+        throw new Error('canvas unavailable')
+      }
+      ctx.drawImage(
+        image,
+        Math.round(image.naturalWidth * rect.x),
+        Math.round(image.naturalHeight * rect.y),
+        canvas.width,
+        canvas.height,
+        0,
+        0,
+        canvas.width,
+        canvas.height
+      )
+      // 裁切后仍用 data URL 保存，避免原图过大占满存储
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.9)
+      setChatBackground(dataUrl)
+      setChatBackgroundCrop(null)
+      showToast({ key: 'backgroundSaved' })
+    } catch {
+      showToast({ key: 'backgroundFailed', type: 'error' })
+    } finally {
+      setBusy(false)
+    }
   }
 
   return (
@@ -150,6 +201,25 @@ export const BackgroundSetting = () => {
 
         <div className={styles.description}>{t('backgroundDescription')}</div>
       </div>
+      {pending ? (
+        <BackgroundCropModal
+          src={pending}
+          initial={crop}
+          aspect={aspect}
+          onCancel={() => setPending(null)}
+          onConfirm={(rect) => void applyCrop(rect)}
+        />
+      ) : null}
     </div>
   )
 }
+
+/** 载入图片，等解码完成后再画到 canvas 上 */
+const loadImage = (src: string): Promise<HTMLImageElement> =>
+  new Promise((resolve, reject) => {
+    const image = new Image()
+    image.crossOrigin = 'anonymous'
+    image.onload = () => resolve(image)
+    image.onerror = () => reject(new Error('image load failed'))
+    image.src = src
+  })
