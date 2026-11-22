@@ -4,8 +4,7 @@
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
-  /* 给悬浮的毛玻璃顶栏让出位置，消息从它下面开始排 */
-  padding-top: 72px;
+  /* 不做顶部整体留白：消息区铺满，内容可以滚到悬浮顶栏下面被毛玻璃虚化 */
 }
 
 .header {
