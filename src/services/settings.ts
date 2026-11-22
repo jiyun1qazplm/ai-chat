@@ -120,7 +120,8 @@ const KEYS = {
   reasoningOnMode: 'chat-demo:reasoning-on-mode',
   locale: 'chat-demo:locale',
   accentColor: 'chat-demo:accent-color',
-  accentAffectsBubble: 'chat-demo:accent-affects-bubble',
+  // 键名带 v2：旧版本保存过的开启状态不再生效，升级后统一回到默认关闭
+  accentAffectsBubble: 'chat-demo:accent-affects-bubble-v2',
   enterToSend: 'chat-demo:enter-to-send',
   fontScale: 'chat-demo:font-scale',
   density: 'chat-demo:density',
