@@ -30,6 +30,8 @@
 }
 
 .column {
+  /* 不参与 flex 拉伸：滚动内容按自身高度排布 */
+  flex: none;
   width: calc(var(--message-list-max-width) - 2 * var(--message-list-padding-horizontal));
   max-width: calc(100% - 24px);
   margin: 0 auto;
@@ -38,11 +40,13 @@
 
 /*
  * 顶部留白单独作为可滚动的占位块，而不是 .column 的 padding：
- * padding 会被算进滚动高度底部，导致页面滚到底时上方仍卡着留白、消息永远到不了顶栏后面。
- * 用占位块后，用户向上滚动时这块会被滚出视口，消息自然穿过悬浮的毛玻璃顶栏。
+ * padding 会被算进滚动内容的底部，导致滚到底时上方仍卡着留白、消息永远到不了顶栏后面。
+ * 桌面端 .scroll 是 display: contents，占位块直接成为滚动项；移动端它是 flex 子项。
+ * 两端都靠 flex: none 固定高度，向上滚动时会被滚出视口。
  */
 .topSpace {
   flex: none;
+  min-height: 72px;
   height: 72px;
 }
 
