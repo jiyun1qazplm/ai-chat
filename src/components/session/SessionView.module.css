@@ -15,8 +15,8 @@
   height: 60px;
   padding: 12px 18px 0;
   box-sizing: border-box;
-/* 不铺底色：背景图（画在 .content 上）要能从标题栏这一层透出来 */
-  background: transparent;
+  /* 临时调试：标题栏涂红 */
+  background: rgba(255, 0, 0, 0.75) !important;
 }
 
 .title {
