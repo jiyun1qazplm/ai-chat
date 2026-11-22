@@ -87,6 +87,8 @@ type Settings = {
   topBlur: boolean
   /** 顶部模糊强度（像素） */
   topBlurStrength: number
+  /** 顶部模糊覆盖的高度，以视口高度的百分比表示（4-60） */
+  topBlurHeight: number
   /** 聊天区背景图：本地图片的 data URL 或外部链接；null 表示不使用 */
   chatBackground: string | null
   /** 背景图上方遮罩的浓度 0-100，越大文字越清晰 */
@@ -140,6 +142,7 @@ const KEYS = {
   density: 'chat-demo:density',
   topBlur: 'chat-demo:top-blur',
   topBlurStrength: 'chat-demo:top-blur-strength',
+  topBlurHeight: 'chat-demo:top-blur-height',
   chatBackground: 'chat-demo:chat-background',
   chatBackgroundDim: 'chat-demo:chat-background-dim',
   chatBackgroundCrop: 'chat-demo:chat-background-crop',
@@ -296,6 +299,16 @@ const initialTopBlurStrength = (): number => {
   return Number.isFinite(value) && value >= 4 && value <= 30 ? value : 14
 }
 
+/** 顶部模糊高度，范围 4-60（视口百分比），默认 24 */
+const initialTopBlurHeight = (): number => {
+  const saved = read(KEYS.topBlurHeight)
+  if (saved === null || saved.trim() === '') {
+    return 24
+  }
+  const value = Number(saved)
+  return Number.isFinite(value) && value >= 4 && value <= 60 ? value : 24
+}
+
 /** 背景遮罩浓度限制在 0-90，默认 40 */
 const initialBackgroundDim = (): number => {
   const saved = read(KEYS.chatBackgroundDim)
@@ -371,6 +384,7 @@ export const useSettings = create<Settings>(() => ({
   density: initialDensity(),
   topBlur: read(KEYS.topBlur) !== 'false',
   topBlurStrength: initialTopBlurStrength(),
+  topBlurHeight: initialTopBlurHeight(),
   chatBackground: read(KEYS.chatBackground),
   chatBackgroundDim: initialBackgroundDim(),
   chatBackgroundCrop: initialBackgroundCrop(),
@@ -687,4 +701,10 @@ export const setTopBlurStrength = (strength: number) => {
   const value = Math.min(30, Math.max(4, Math.round(strength)))
   write(KEYS.topBlurStrength, String(value))
   useSettings.setState({ topBlurStrength: value })
+}
+
+export const setTopBlurHeight = (height: number) => {
+  const value = Math.min(60, Math.max(4, Math.round(height)))
+  write(KEYS.topBlurHeight, String(value))
+  useSettings.setState({ topBlurHeight: value })
 }
