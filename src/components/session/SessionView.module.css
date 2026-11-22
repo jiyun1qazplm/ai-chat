@@ -73,39 +73,27 @@
 }
 
 /*
- * 输入框上方的渐变模糊层。
- * backdrop-filter 实时作用于下方消息，mask 让模糊从下往上逐渐消失，
- * 于是靠近输入框的内容最虚、越往上越清晰，形成自然的淡出。
- * 完全不参与布局，也不拦截点击。
+ * 标题栏下方的渐变模糊层。
+ * 从标题栏底边（60px）开始，向下逐渐消失：
+ * 越靠近标题栏越模糊，于是滚出去的正文自然淡出，而不是被硬切一刀。
+ * 绝对定位，不参与布局，也不拦截点击。
  */
-.bottomFade {
+.topFade {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 0;
+  top: var(--session-header-h, 60px);
   z-index: 9;
-  height: 170px;
+  height: 130px;
   pointer-events: none;
-  -webkit-backdrop-filter: blur(var(--chat-bottom-blur, 14px));
-  backdrop-filter: blur(var(--chat-bottom-blur, 14px));
-  /* 底部完全模糊，向上渐隐到不模糊 */
-  -webkit-mask-image: linear-gradient(
-    to top,
-    #000 0%,
-    rgba(0, 0, 0, 0.85) 30%,
-    rgba(0, 0, 0, 0.35) 60%,
-    transparent 100%
-  );
-  mask-image: linear-gradient(
-    to top,
-    #000 0%,
-    rgba(0, 0, 0, 0.85) 30%,
-    rgba(0, 0, 0, 0.35) 60%,
-    transparent 100%
-  );
+  -webkit-backdrop-filter: blur(var(--chat-top-blur, 14px));
+  backdrop-filter: blur(var(--chat-top-blur, 14px));
+  /* 顶部完全模糊，向下渐隐到不模糊 */
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, rgba(0, 0, 0, 0.75) 35%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0%, rgba(0, 0, 0, 0.75) 35%, transparent 100%);
 }
 
 /* 关闭时整层隐藏，不影响任何布局 */
-body[data-bottom-blur='off'] .bottomFade {
+body[data-top-blur='off'] .topFade {
   display: none;
 }
