@@ -301,4 +301,9 @@ export const en = {
   backgroundCleared: 'Background removed',
   backgroundFailed: 'Could not read the image',
   backgroundTooLarge: 'Image must be under {size}MB',
+  cropTitle: 'Crop background',
+  cropHint:
+    'Drag the box to pick the visible area. The chat area is about {ratio}:1, so a box closer to that ratio will stretch less.',
+  cropConfirm: 'Confirm and save',
+  cropSize: 'Selection covers {w}% × {h}% of the image',
 } satisfies Record<keyof typeof zh, string>
