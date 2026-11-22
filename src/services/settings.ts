@@ -289,6 +289,9 @@ const initialBackgroundCrop = (): Settings['chatBackgroundCrop'] => {
   return null
 }
 
+/** 顶部模糊默认关闭；只有明确保存过开启才启用 */
+const initialTopBlur = (): boolean => read(KEYS.topBlur) === 'true'
+
 /** 顶部模糊强度限制在 4-30px，默认 14 */
 const initialTopBlurStrength = (): number => {
   const saved = read(KEYS.topBlurStrength)
@@ -382,7 +385,7 @@ export const useSettings = create<Settings>(() => ({
   enterToSend: read(KEYS.enterToSend) !== 'false',
   fontScale: initialFontScale(),
   density: initialDensity(),
-  topBlur: read(KEYS.topBlur) !== 'false',
+  topBlur: initialTopBlur(),
   topBlurStrength: initialTopBlurStrength(),
   topBlurHeight: initialTopBlurHeight(),
   chatBackground: read(KEYS.chatBackground),
