@@ -1,0 +1,95 @@
+.dialog {
+  width: min(560px, calc(100vw - 32px));
+}
+
+.hint {
+  margin-bottom: 12px;
+  color: var(--dsw-alias-label-secondary);
+  font-size: 13px;
+  line-height: 20px;
+}
+
+/* 图片舞台：保持原图比例，裁剪框用百分比定位 */
+.stage {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 12px;
+  background: var(--dsw-alias-bg-skeleton);
+  user-select: none;
+  touch-action: none;
+}
+
+.image {
+  display: block;
+  width: 100%;
+  height: auto;
+  pointer-events: none;
+}
+
+/* 整体压暗，裁剪框区域靠 box 的高亮边框突出 */
+.shade {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+}
+
+.box {
+  position: absolute;
+  box-sizing: border-box;
+  border: 2px solid var(--dsw-alias-brand-primary);
+  /* 挖空选中区域：用超大内阴影让框内保持原亮度 */
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
+  cursor: move;
+  touch-action: none;
+}
+
+/* 四角拖拽点 */
+.handle {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid var(--dsw-alias-brand-primary);
+  box-sizing: border-box;
+  touch-action: none;
+}
+
+.nw {
+  top: -9px;
+  left: -9px;
+  cursor: nwse-resize;
+}
+
+.ne {
+  top: -9px;
+  right: -9px;
+  cursor: nesw-resize;
+}
+
+.sw {
+  bottom: -9px;
+  left: -9px;
+  cursor: nesw-resize;
+}
+
+.se {
+  bottom: -9px;
+  right: -9px;
+  cursor: nwse-resize;
+}
+
+.meta {
+  margin-top: 10px;
+  color: var(--dsw-alias-label-caption);
+  font-size: 12px;
+  text-align: center;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
