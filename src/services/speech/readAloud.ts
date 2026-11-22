@@ -144,11 +144,15 @@ export const toggleReadAloud = (
         audio.onerror = () => {
           const code = audio.error?.code
           const reason =
-            code === 1 ? '音轨被中止'
-            : code === 2 ? '网络错误'
-            : code === 3 ? '解码失败（格式可能不被支持）'
-            : code === 4 ? '音频格式不支持或被阻止'
-            : '未知原因'
+            code === 1
+              ? '音轨被中止'
+              : code === 2
+                ? '网络错误'
+                : code === 3
+                  ? '解码失败（格式可能不被支持）'
+                  : code === 4
+                    ? '音频格式不支持或被阻止'
+                    : '未知原因'
           finish(controller)
           onError(new Error(`播放失败：${reason}`))
         }
