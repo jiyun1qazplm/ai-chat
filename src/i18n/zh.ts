@@ -285,4 +285,8 @@ export const zh = {
   backgroundCleared: '已移除背景',
   backgroundFailed: '图片读取失败',
   backgroundTooLarge: '图片不能超过 {size}MB',
+  cropTitle: '调整背景取景',
+  cropHint: '拖动方框选择要显示的区域；聊天区大约 {ratio}:1，方框越接近这个比例越不会被拉伸',
+  cropConfirm: '确认并保存',
+  cropSize: '选区占原图 {w}% × {h}%',
 } as const
