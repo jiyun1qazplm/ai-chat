@@ -186,18 +186,6 @@ const applyBackground = () => {
   )
 }
 
-/**
- * 顶部模糊：开关写成 body 属性供样式判定，强度写成 CSS 变量。
- * 关闭时样式表直接隐藏模糊层，不参与布局。
- */
-const applyTopBlur = () => {
-  const { topBlur, topBlurStrength, topBlurHeight } = useSettings.getState()
-  document.body.setAttribute('data-top-blur', topBlur ? 'on' : 'off')
-  document.documentElement.style.setProperty('--chat-top-blur', `${topBlurStrength}px`)
-  // 高度按视口百分比，换机型自适应
-  document.documentElement.style.setProperty('--chat-top-blur-height', `${topBlurHeight}vh`)
-}
-
 /** 首次渲染前应用一次，之后随设置变化更新 */
 export const setupAppearance = () => {
   applyAppearance()
@@ -206,6 +194,4 @@ export const setupAppearance = () => {
   useSettings.subscribe(applyEnterBehavior)
   applyBackground()
   useSettings.subscribe(applyBackground)
-  applyTopBlur()
-  useSettings.subscribe(applyTopBlur)
 }
