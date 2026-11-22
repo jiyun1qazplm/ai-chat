@@ -24,6 +24,8 @@ import {
   setAccentAffectsBubble,
   setAccentColor,
   setDensity,
+  setBottomBlur,
+  setBottomBlurStrength,
   setEnterToSend,
   setFontScale,
   setLocale,
@@ -406,6 +408,8 @@ const ThemeSetting = () => {
 /** 外观：强调色、字号、消息疏密 */
 const AppearanceSettings = () => {
   const t = useTranslate()
+  const bottomBlur = useSettings((state) => state.bottomBlur)
+  const bottomBlurStrength = useSettings((state) => state.bottomBlurStrength)
   const accentColor = useSettings((state) => state.accentColor) ?? ''
   const accentAffectsBubble = useSettings((state) => state.accentAffectsBubble)
   const fontScale = useSettings((state) => state.fontScale)
@@ -493,6 +497,49 @@ const AppearanceSettings = () => {
           />
         }
       />
+      <SettingCell
+        label={t('settingsBottomBlur')}
+        description={t('settingsBottomBlurDesc')}
+        status={null}
+        action={
+          <Select
+            ariaLabel={t('settingsBottomBlur')}
+            value={bottomBlur ? 'on' : 'off'}
+            options={[
+              { value: 'off' as const, label: t('settingsBottomBlurOff') },
+              { value: 'on' as const, label: t('settingsBottomBlurOn') },
+            ]}
+            onChange={(value) => setBottomBlur(value === 'on')}
+          />
+        }
+      />
+      {bottomBlur ? (
+        <SettingCell
+          label={t('settingsBottomBlurStrength')}
+          status={null}
+          action={
+            <div className={styles.scaleControls}>
+              <Button
+                size="s"
+                variant="outlined"
+                disabled={bottomBlurStrength <= 4}
+                onClick={() => setBottomBlurStrength(bottomBlurStrength - 2)}
+              >
+                −
+              </Button>
+              <span className={styles.scaleValue}>{bottomBlurStrength}px</span>
+              <Button
+                size="s"
+                variant="outlined"
+                disabled={bottomBlurStrength >= 30}
+                onClick={() => setBottomBlurStrength(bottomBlurStrength + 2)}
+              >
+                +
+              </Button>
+            </div>
+          }
+        />
+      ) : null}
       <SettingCell
         label={t('settingsEnterToSend')}
         description={t('settingsEnterToSendDesc')}
