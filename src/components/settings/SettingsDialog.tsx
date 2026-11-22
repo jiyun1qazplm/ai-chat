@@ -25,6 +25,7 @@ import {
   setAccentColor,
   setDensity,
   setTopBlur,
+  setTopBlurHeight,
   setTopBlurStrength,
   setEnterToSend,
   setFontScale,
@@ -410,6 +411,7 @@ const AppearanceSettings = () => {
   const t = useTranslate()
   const topBlur = useSettings((state) => state.topBlur)
   const topBlurStrength = useSettings((state) => state.topBlurStrength)
+  const topBlurHeight = useSettings((state) => state.topBlurHeight)
   const accentColor = useSettings((state) => state.accentColor) ?? ''
   const accentAffectsBubble = useSettings((state) => state.accentAffectsBubble)
   const fontScale = useSettings((state) => state.fontScale)
@@ -533,6 +535,33 @@ const AppearanceSettings = () => {
                 variant="outlined"
                 disabled={topBlurStrength >= 30}
                 onClick={() => setTopBlurStrength(topBlurStrength + 2)}
+              >
+                +
+              </Button>
+            </div>
+          }
+        />
+      ) : null}
+      {topBlur ? (
+        <SettingCell
+          label={t('settingsTopBlurHeight')}
+          status={null}
+          action={
+            <div className={styles.scaleControls}>
+              <Button
+                size="s"
+                variant="outlined"
+                disabled={topBlurHeight <= 4}
+                onClick={() => setTopBlurHeight(topBlurHeight - 2)}
+              >
+                −
+              </Button>
+              <span className={styles.scaleValue}>{topBlurHeight}%</span>
+              <Button
+                size="s"
+                variant="outlined"
+                disabled={topBlurHeight >= 60}
+                onClick={() => setTopBlurHeight(topBlurHeight + 2)}
               >
                 +
               </Button>
