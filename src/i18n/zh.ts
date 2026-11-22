@@ -289,4 +289,9 @@ export const zh = {
   cropHint: '拖动方框选择要显示的区域；聊天区大约 {ratio}:1，方框越接近这个比例越不会被拉伸',
   cropConfirm: '确认并保存',
   cropSize: '选区占原图 {w}% × {h}%',
+  settingsBottomBlur: '底部模糊',
+  settingsBottomBlurDesc: '消息滚到输入框附近时逐渐虚化，避免被硬切',
+  settingsBottomBlurOn: '开启',
+  settingsBottomBlurOff: '关闭',
+  settingsBottomBlurStrength: '模糊强度',
 } as const
