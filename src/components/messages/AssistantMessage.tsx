@@ -142,8 +142,9 @@ export const AssistantMessage = memo(function AssistantMessage({
           </span>
         </div>
       ) : null}
-      {/* 生成中实时显示 token 速度；结束后由下方底栏显示最终统计 */}
-      {streaming && answer ? (
+      {/* 生成中实时显示 token 速度；结束后由下方底栏显示最终统计。
+          不依赖 answer：首轮生成时首次输出的早期也要能看到速度 */}
+      {streaming && !waiting ? (
         <div className={styles.liveStats}>
           <ReplyStats message={message} streaming />
         </div>
