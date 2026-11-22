@@ -1,5 +1,7 @@
 # chat-demo
 
+在线地址：<https://jiyun1qazplm.github.io/ai-chat/>
+
 [English](README.md) | 简体中文
 
 基于 DeepSeek API 的静态聊天示例。无需应用后端，浏览器直接请求配置的 API 服务。
