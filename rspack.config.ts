@@ -82,7 +82,11 @@ export const createConfig = ({
     }),
     new rspack.DefinePlugin({ __API_ORIGIN__: JSON.stringify(apiOrigin) }),
     new rspack.CopyRspackPlugin({
-      patterns: [{ from: path.resolve(root, 'LICENSE'), to: 'LICENSE', toType: 'file' }],
+      patterns: [
+        { from: path.resolve(root, 'LICENSE'), to: 'LICENSE', toType: 'file' },
+        // sitemap 与 IndexNow 校验文件需要发布到站点根目录，供搜索引擎抓取
+        { from: path.resolve(root, 'public'), to: '.', noErrorOnMissing: true },
+      ],
     }),
   ],
   performance: { hints: false },
