@@ -24,9 +24,6 @@ import {
   setAccentAffectsBubble,
   setAccentColor,
   setDensity,
-  setTopBlur,
-  setTopBlurHeight,
-  setTopBlurStrength,
   setEnterToSend,
   setFontScale,
   setLocale,
@@ -409,9 +406,6 @@ const ThemeSetting = () => {
 /** 外观：强调色、字号、消息疏密 */
 const AppearanceSettings = () => {
   const t = useTranslate()
-  const topBlur = useSettings((state) => state.topBlur)
-  const topBlurStrength = useSettings((state) => state.topBlurStrength)
-  const topBlurHeight = useSettings((state) => state.topBlurHeight)
   const accentColor = useSettings((state) => state.accentColor) ?? ''
   const accentAffectsBubble = useSettings((state) => state.accentAffectsBubble)
   const fontScale = useSettings((state) => state.fontScale)
@@ -499,76 +493,6 @@ const AppearanceSettings = () => {
           />
         }
       />
-      <SettingCell
-        label={t('settingsTopBlur')}
-        description={t('settingsTopBlurDesc')}
-        status={null}
-        action={
-          <Select
-            ariaLabel={t('settingsTopBlur')}
-            value={topBlur ? 'on' : 'off'}
-            options={[
-              { value: 'off' as const, label: t('settingsTopBlurOff') },
-              { value: 'on' as const, label: t('settingsTopBlurOn') },
-            ]}
-            onChange={(value) => setTopBlur(value === 'on')}
-          />
-        }
-      />
-      {topBlur ? (
-        <SettingCell
-          label={t('settingsTopBlurStrength')}
-          status={null}
-          action={
-            <div className={styles.scaleControls}>
-              <Button
-                size="s"
-                variant="outlined"
-                disabled={topBlurStrength <= 4}
-                onClick={() => setTopBlurStrength(topBlurStrength - 2)}
-              >
-                −
-              </Button>
-              <span className={styles.scaleValue}>{topBlurStrength}px</span>
-              <Button
-                size="s"
-                variant="outlined"
-                disabled={topBlurStrength >= 30}
-                onClick={() => setTopBlurStrength(topBlurStrength + 2)}
-              >
-                +
-              </Button>
-            </div>
-          }
-        />
-      ) : null}
-      {topBlur ? (
-        <SettingCell
-          label={t('settingsTopBlurHeight')}
-          status={null}
-          action={
-            <div className={styles.scaleControls}>
-              <Button
-                size="s"
-                variant="outlined"
-                disabled={topBlurHeight <= 4}
-                onClick={() => setTopBlurHeight(topBlurHeight - 2)}
-              >
-                −
-              </Button>
-              <span className={styles.scaleValue}>{topBlurHeight}%</span>
-              <Button
-                size="s"
-                variant="outlined"
-                disabled={topBlurHeight >= 60}
-                onClick={() => setTopBlurHeight(topBlurHeight + 2)}
-              >
-                +
-              </Button>
-            </div>
-          }
-        />
-      ) : null}
       <SettingCell
         label={t('settingsEnterToSend')}
         description={t('settingsEnterToSendDesc')}
