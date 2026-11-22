@@ -32,6 +32,8 @@ export const App = () => {
   const locale = useSettings((state) => state.locale)
   // 移动端侧边栏以独立抽屉管理开合状态
   const siderCollapsed = useSettings((state) => state.siderCollapsed) && !isMobile
+  // 有背景图时才启用遮罩层，避免无图时多画一层
+  const hasBackground = useSettings((state) => Boolean(state.chatBackground))
   const ready = useChatStore((state) => state.ready)
   const initError = useChatStore((state) => state.initError)
   const saveError = useChatStore((state) => Object.values(state.sessionSaveErrors).some(Boolean))
@@ -91,7 +93,7 @@ export const App = () => {
               </Button>
             </div>
           ) : null}
-          <div className={styles.content}>
+          <div className={styles.content} data-has-background={hasBackground ? 'true' : undefined}>
             {siderCollapsed ? <CollapsedSider /> : null}
             {!ready || (activeId !== null && !session) ? (
               <div className={styles.loadingView}>
