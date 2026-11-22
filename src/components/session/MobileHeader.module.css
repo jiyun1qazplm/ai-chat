@@ -1,4 +1,7 @@
 .header {
+  /* 压到模糊层之上，让标题与按钮保持清晰 */
+  position: relative;
+  z-index: 11;
   display: flex;
   align-items: center;
   flex-shrink: 0;
