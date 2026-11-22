@@ -143,7 +143,13 @@ const withAlpha = (color: string, alpha: number): string => {
   const hex = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(value)
   if (hex) {
     const raw = hex[1]
-    const full = raw.length === 3 ? raw.split('').map((c) => c + c).join('') : raw
+    const full =
+      raw.length === 3
+        ? raw
+            .split('')
+            .map((c) => c + c)
+            .join('')
+        : raw
     const r = parseInt(full.slice(0, 2), 16)
     const g = parseInt(full.slice(2, 4), 16)
     const b = parseInt(full.slice(4, 6), 16)
@@ -173,8 +179,10 @@ const applyBackground = () => {
   const base = getComputedStyle(document.body).getPropertyValue('--dsw-alias-bg-base').trim()
   root.style.setProperty(
     '--chat-bg-dim-color',
-    withAlpha(base || (document.body.classList.contains('dark') ? '#101014' : '#ffffff'),
-      Math.min(1, Math.max(0, chatBackgroundDim / 100)))
+    withAlpha(
+      base || (document.body.classList.contains('dark') ? '#101014' : '#ffffff'),
+      Math.min(1, Math.max(0, chatBackgroundDim / 100))
+    )
   )
 }
 
@@ -183,9 +191,11 @@ const applyBackground = () => {
  * 关闭时样式表直接隐藏模糊层，不参与布局。
  */
 const applyTopBlur = () => {
-  const { topBlur, topBlurStrength } = useSettings.getState()
+  const { topBlur, topBlurStrength, topBlurHeight } = useSettings.getState()
   document.body.setAttribute('data-top-blur', topBlur ? 'on' : 'off')
   document.documentElement.style.setProperty('--chat-top-blur', `${topBlurStrength}px`)
+  // 高度按视口百分比，换机型自适应
+  document.documentElement.style.setProperty('--chat-top-blur-height', `${topBlurHeight}vh`)
 }
 
 /** 首次渲染前应用一次，之后随设置变化更新 */
