@@ -57,6 +57,7 @@
   position: absolute;
   left: 0;
   right: 0;
+  border-radius: 24px;
   /* 离底边留一点空隙，输入框略微上浮 */
   bottom: 8px;
   z-index: 10;
