@@ -81,6 +81,12 @@
   }
 }
 
+/* 生成中的实时统计：紧贴正文下方，低调显示 */
+.liveStats {
+  display: flex;
+  padding-top: 4px;
+}
+
 .bottom {
   position: relative;
   left: -6px;
