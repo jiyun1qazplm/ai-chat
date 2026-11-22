@@ -95,7 +95,11 @@
   flex-wrap: wrap;
   gap: 10px;
   padding-top: 12px;
-  padding-bottom: 10px;
+  padding-bottom: 10px;}
+
+/* token 统计靠右：操作按钮在左，统计在右 */
+.bottomStats {
+  margin-left: auto;
 }
 
 .actions {
