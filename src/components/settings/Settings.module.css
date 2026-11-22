@@ -678,3 +678,18 @@
     color: var(--dsw-alias-brand-text);
   }
 }
+
+/* 背景图预览 */
+.backgroundPreview {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.backgroundThumb {
+  width: 96px;
+  height: 54px;
+  border-radius: 8px;
+  object-fit: cover;
+  border: 1px solid var(--dsw-alias-border-l2);
+}
