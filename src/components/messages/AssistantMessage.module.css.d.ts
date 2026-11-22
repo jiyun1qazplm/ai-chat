@@ -6,11 +6,12 @@ declare const styles: {
   readonly "fading": string;
   readonly "notice": string;
   readonly "noticeAction": string;
+  readonly "liveStats": string;
   readonly "bottom": string;
+  readonly "bottomStats": string;
   readonly "alwaysShow": string;
   readonly "continueButton": string;
   readonly "summary": string;
   readonly "summaryActive": string;
 };
 export = styles;
-
