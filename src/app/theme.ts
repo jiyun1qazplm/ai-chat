@@ -137,10 +137,53 @@ const applyEnterBehavior = () => {
   document.documentElement.setAttribute('data-enter-action', enterToSend ? 'send' : 'newline')
 }
 
+/** 把颜色按透明度转成 rgba；无法解析时回退到透明的同色 */
+const withAlpha = (color: string, alpha: number): string => {
+  const value = color.trim()
+  const hex = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(value)
+  if (hex) {
+    const raw = hex[1]
+    const full = raw.length === 3 ? raw.split('').map((c) => c + c).join('') : raw
+    const r = parseInt(full.slice(0, 2), 16)
+    const g = parseInt(full.slice(2, 4), 16)
+    const b = parseInt(full.slice(4, 6), 16)
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`
+  }
+  const rgb = /^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i.exec(value)
+  if (rgb) {
+    return `rgba(${rgb[1]}, ${rgb[2]}, ${rgb[3]}, ${alpha})`
+  }
+  return `color-mix(in srgb, ${value} ${Math.round(alpha * 100)}%, transparent)`
+}
+
+/**
+ * 聊天区背景图：图片与遮罩色写成 CSS 变量，由 .content 自己的 background 消费。
+ * 不使用伪元素，避免引入额外图层影响消息列表与输入框的布局。
+ */
+const applyBackground = () => {
+  const { chatBackground, chatBackgroundDim } = useSettings.getState()
+  const root = document.documentElement
+  if (!chatBackground) {
+    root.style.removeProperty('--chat-bg-image')
+    root.style.removeProperty('--chat-bg-dim-color')
+    return
+  }
+  root.style.setProperty('--chat-bg-image', `url("${chatBackground}")`)
+  // 遮罩颜色跟随当前主题底色，深浅色模式下都保证文字可读
+  const base = getComputedStyle(document.body).getPropertyValue('--dsw-alias-bg-base').trim()
+  root.style.setProperty(
+    '--chat-bg-dim-color',
+    withAlpha(base || (document.body.classList.contains('dark') ? '#101014' : '#ffffff'),
+      Math.min(1, Math.max(0, chatBackgroundDim / 100)))
+  )
+}
+
 /** 首次渲染前应用一次，之后随设置变化更新 */
 export const setupAppearance = () => {
   applyAppearance()
   useSettings.subscribe(applyAppearance)
   applyEnterBehavior()
   useSettings.subscribe(applyEnterBehavior)
+  applyBackground()
+  useSettings.subscribe(applyBackground)
 }
