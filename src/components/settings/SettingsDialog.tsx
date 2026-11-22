@@ -24,8 +24,8 @@ import {
   setAccentAffectsBubble,
   setAccentColor,
   setDensity,
-  setBottomBlur,
-  setBottomBlurStrength,
+  setTopBlur,
+  setTopBlurStrength,
   setEnterToSend,
   setFontScale,
   setLocale,
@@ -408,8 +408,8 @@ const ThemeSetting = () => {
 /** 外观：强调色、字号、消息疏密 */
 const AppearanceSettings = () => {
   const t = useTranslate()
-  const bottomBlur = useSettings((state) => state.bottomBlur)
-  const bottomBlurStrength = useSettings((state) => state.bottomBlurStrength)
+  const topBlur = useSettings((state) => state.topBlur)
+  const topBlurStrength = useSettings((state) => state.topBlurStrength)
   const accentColor = useSettings((state) => state.accentColor) ?? ''
   const accentAffectsBubble = useSettings((state) => state.accentAffectsBubble)
   const fontScale = useSettings((state) => state.fontScale)
@@ -498,41 +498,41 @@ const AppearanceSettings = () => {
         }
       />
       <SettingCell
-        label={t('settingsBottomBlur')}
-        description={t('settingsBottomBlurDesc')}
+        label={t('settingsTopBlur')}
+        description={t('settingsTopBlurDesc')}
         status={null}
         action={
           <Select
-            ariaLabel={t('settingsBottomBlur')}
-            value={bottomBlur ? 'on' : 'off'}
+            ariaLabel={t('settingsTopBlur')}
+            value={topBlur ? 'on' : 'off'}
             options={[
-              { value: 'off' as const, label: t('settingsBottomBlurOff') },
-              { value: 'on' as const, label: t('settingsBottomBlurOn') },
+              { value: 'off' as const, label: t('settingsTopBlurOff') },
+              { value: 'on' as const, label: t('settingsTopBlurOn') },
             ]}
-            onChange={(value) => setBottomBlur(value === 'on')}
+            onChange={(value) => setTopBlur(value === 'on')}
           />
         }
       />
-      {bottomBlur ? (
+      {topBlur ? (
         <SettingCell
-          label={t('settingsBottomBlurStrength')}
+          label={t('settingsTopBlurStrength')}
           status={null}
           action={
             <div className={styles.scaleControls}>
               <Button
                 size="s"
                 variant="outlined"
-                disabled={bottomBlurStrength <= 4}
-                onClick={() => setBottomBlurStrength(bottomBlurStrength - 2)}
+                disabled={topBlurStrength <= 4}
+                onClick={() => setTopBlurStrength(topBlurStrength - 2)}
               >
                 −
               </Button>
-              <span className={styles.scaleValue}>{bottomBlurStrength}px</span>
+              <span className={styles.scaleValue}>{topBlurStrength}px</span>
               <Button
                 size="s"
                 variant="outlined"
-                disabled={bottomBlurStrength >= 30}
-                onClick={() => setBottomBlurStrength(bottomBlurStrength + 2)}
+                disabled={topBlurStrength >= 30}
+                onClick={() => setTopBlurStrength(topBlurStrength + 2)}
               >
                 +
               </Button>
