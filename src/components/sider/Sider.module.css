@@ -204,6 +204,10 @@
   bottom: 0;
   left: 0;
   z-index: 800;
+  /* 抽屉右上角与右下角做成圆角，和整体玻璃质感一致 */
+  border-top-right-radius: 24px;
+  border-bottom-right-radius: 24px;
+  overflow: hidden;
 }
 
 .drawerMask {
