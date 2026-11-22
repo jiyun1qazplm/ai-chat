@@ -7,7 +7,10 @@
   height: 100%;
   padding: 6px 12px 0;
   border-right: 1px solid var(--dsw-alias-border-l1);
-  background-color: var(--dsw-specific-sidebar-fill);
+  /* 与输入框同款毛玻璃：背景图从对话栏下面透出并被虚化 */
+  background: color-mix(in srgb, var(--dsw-specific-input-major) 28%, transparent);
+  -webkit-backdrop-filter: blur(10px) saturate(1.6);
+  backdrop-filter: blur(10px) saturate(1.6);
 }
 
 .top {
@@ -113,7 +116,10 @@
   line-height: 18px;
   font-weight: 500;
   color: var(--dsw-alias-label-tertiary);
-  background-color: var(--dsw-specific-sidebar-fill);
+  /* 与对话栏一致的玻璃底，避免吸顶时出现一条实心色带 */
+  background: color-mix(in srgb, var(--dsw-specific-input-major) 28%, transparent);
+  -webkit-backdrop-filter: blur(10px) saturate(1.6);
+  backdrop-filter: blur(10px) saturate(1.6);
   user-select: none;
 }
 
