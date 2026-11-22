@@ -83,10 +83,10 @@ type Settings = {
   fontScale: number
   /** 消息列表的疏密：紧凑 / 标准 / 宽松 */
   density: 'compact' | 'normal' | 'comfortable'
-  /** 输入框上方是否用渐变模糊让滚过的消息自然淡出 */
-  bottomBlur: boolean
-  /** 底部模糊强度（像素） */
-  bottomBlurStrength: number
+  /** 顶部是否用渐变模糊让滚到标题栏下的消息自然淡出 */
+  topBlur: boolean
+  /** 顶部模糊强度（像素） */
+  topBlurStrength: number
   /** 聊天区背景图：本地图片的 data URL 或外部链接；null 表示不使用 */
   chatBackground: string | null
   /** 背景图上方遮罩的浓度 0-100，越大文字越清晰 */
@@ -138,8 +138,8 @@ const KEYS = {
   enterToSend: 'chat-demo:enter-to-send',
   fontScale: 'chat-demo:font-scale',
   density: 'chat-demo:density',
-  bottomBlur: 'chat-demo:bottom-blur',
-  bottomBlurStrength: 'chat-demo:bottom-blur-strength',
+  topBlur: 'chat-demo:top-blur',
+  topBlurStrength: 'chat-demo:top-blur-strength',
   chatBackground: 'chat-demo:chat-background',
   chatBackgroundDim: 'chat-demo:chat-background-dim',
   chatBackgroundCrop: 'chat-demo:chat-background-crop',
@@ -286,9 +286,9 @@ const initialBackgroundCrop = (): Settings['chatBackgroundCrop'] => {
   return null
 }
 
-/** 底部模糊强度限制在 4-30px，默认 14 */
-const initialBottomBlurStrength = (): number => {
-  const saved = read(KEYS.bottomBlurStrength)
+/** 顶部模糊强度限制在 4-30px，默认 14 */
+const initialTopBlurStrength = (): number => {
+  const saved = read(KEYS.topBlurStrength)
   if (saved === null || saved.trim() === '') {
     return 14
   }
@@ -369,8 +369,8 @@ export const useSettings = create<Settings>(() => ({
   enterToSend: read(KEYS.enterToSend) !== 'false',
   fontScale: initialFontScale(),
   density: initialDensity(),
-  bottomBlur: read(KEYS.bottomBlur) !== 'false',
-  bottomBlurStrength: initialBottomBlurStrength(),
+  topBlur: read(KEYS.topBlur) !== 'false',
+  topBlurStrength: initialTopBlurStrength(),
   chatBackground: read(KEYS.chatBackground),
   chatBackgroundDim: initialBackgroundDim(),
   chatBackgroundCrop: initialBackgroundCrop(),
@@ -678,13 +678,13 @@ export const setChatBackgroundDim = (dim: number) => {
   useSettings.setState({ chatBackgroundDim: value })
 }
 
-export const setBottomBlur = (bottomBlur: boolean) => {
-  write(KEYS.bottomBlur, String(bottomBlur))
-  useSettings.setState({ bottomBlur })
+export const setTopBlur = (topBlur: boolean) => {
+  write(KEYS.topBlur, String(topBlur))
+  useSettings.setState({ topBlur })
 }
 
-export const setBottomBlurStrength = (strength: number) => {
+export const setTopBlurStrength = (strength: number) => {
   const value = Math.min(30, Math.max(4, Math.round(strength)))
-  write(KEYS.bottomBlurStrength, String(value))
-  useSettings.setState({ bottomBlurStrength: value })
+  write(KEYS.topBlurStrength, String(value))
+  useSettings.setState({ topBlurStrength: value })
 }
