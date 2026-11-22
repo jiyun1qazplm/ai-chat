@@ -178,6 +178,19 @@ const applyBackground = () => {
   )
 }
 
+/**
+ * 底部模糊：开关写成 body 属性供样式判定，强度写成 CSS 变量。
+ * 关闭时样式表直接隐藏模糊层，不参与布局。
+ */
+const applyBottomBlur = () => {
+  const { bottomBlur, bottomBlurStrength } = useSettings.getState()
+  document.body.setAttribute('data-bottom-blur', bottomBlur ? 'on' : 'off')
+  document.documentElement.style.setProperty(
+    '--chat-bottom-blur',
+    `${bottomBlurStrength}px`
+  )
+}
+
 /** 首次渲染前应用一次，之后随设置变化更新 */
 export const setupAppearance = () => {
   applyAppearance()
@@ -186,4 +199,6 @@ export const setupAppearance = () => {
   useSettings.subscribe(applyEnterBehavior)
   applyBackground()
   useSettings.subscribe(applyBackground)
+  applyBottomBlur()
+  useSettings.subscribe(applyBottomBlur)
 }
