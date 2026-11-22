@@ -167,7 +167,8 @@ export const settleReply = (
       : [block]
   }),
   // 收尾时以当前时间结束计时；没有开始时间的回复不记录
-  generatedTo: reply.generatedFrom !== undefined && reply.generatedTo === undefined ? now : reply.generatedTo,
+  generatedTo:
+    reply.generatedFrom !== undefined && reply.generatedTo === undefined ? now : reply.generatedTo,
 })
 
 /** 回复里所有文本块拼起来，用于复制与判断是否有回答 */
