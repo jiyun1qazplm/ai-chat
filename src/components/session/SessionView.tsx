@@ -31,8 +31,8 @@ export const SessionView = ({
           </div>
         </div>
       )}
-      {/* 输入框上方的渐变模糊：消息滚到此处时逐步虚化，避免被硬切 */}
-      <div className={styles.bottomFade} aria-hidden />
+      {/* 标题栏下方的渐变模糊：消息滚到此处时逐步虚化，避免被硬切 */}
+      <div className={styles.topFade} aria-hidden />
       <MessageList
         session={session}
         streaming={streaming}
