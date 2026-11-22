@@ -92,7 +92,12 @@ export const applyEvent = (
         return event.content_block.type === 'tool_use' ? { ...next, prefix: false } : next
       }
       blockIndexes.set(event.index, next.blocks.length)
-      return { ...next, blocks: [...next.blocks, block] }
+      return {
+        ...next,
+        blocks: [...next.blocks, block],
+        // 首个内容块到达即开始计时，用于计算每秒 token 数
+        generatedFrom: next.generatedFrom ?? now,
+      }
     }
     case 'content_block_delta': {
       const index = blockIndexes.get(event.index)
@@ -161,6 +166,8 @@ export const settleReply = (
       ? [{ ...block, endedAt: now }]
       : [block]
   }),
+  // 收尾时以当前时间结束计时；没有开始时间的回复不记录
+  generatedTo: reply.generatedFrom !== undefined && reply.generatedTo === undefined ? now : reply.generatedTo,
 })
 
 /** 回复里所有文本块拼起来，用于复制与判断是否有回答 */
