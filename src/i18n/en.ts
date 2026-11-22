@@ -283,8 +283,22 @@ export const en = {
   settingsTtsFormat: 'Audio format',
   settingsTtsSpeed: 'Speed ({value}×)',
   ttsTestSave: 'Preview and save',
-  ttsProbeUndecodable: 'The browser cannot decode this audio. Try another format (mp3 recommended).',
+  ttsProbeUndecodable:
+    'The browser cannot decode this audio. Try another format (mp3 recommended).',
   ttsProbeResult: 'Content type {type}, {bytes} bytes, decodable: {decodable}',
   ttsProbeYes: 'yes',
   ttsProbeNo: 'no',
+  settingsChatBackground: 'Chat background',
+  backgroundPickFile: 'Choose a local image',
+  backgroundLoading: 'Processing...',
+  backgroundUrlPlaceholder: 'Or paste an image URL',
+  backgroundApplyUrl: 'Use this URL',
+  backgroundRemove: 'Remove background',
+  backgroundDim: 'Overlay strength ({value}%)',
+  backgroundDescription:
+    'The image stays in your browser and is never uploaded; a stronger overlay keeps text readable',
+  backgroundSaved: 'Background updated',
+  backgroundCleared: 'Background removed',
+  backgroundFailed: 'Could not read the image',
+  backgroundTooLarge: 'Image must be under {size}MB',
 } satisfies Record<keyof typeof zh, string>
