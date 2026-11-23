@@ -42,7 +42,9 @@ export const MemorySettings = () => {
   const [extracting, setExtracting] = useState(false)
   const [consolidating, setConsolidating] = useState(false)
   /** 整理结果预览；用户确认后才替换，避免直接覆盖 */
-  const [preview, setPreview] = useState<string[] | null>(null)
+  const [preview, setPreview] = useState<{ text: string; kind: 'fact' | 'preference' }[] | null>(
+    null
+  )
   /** 已展开的长记忆 id；默认折叠，只显示前几行 */
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const activeId = useChatStore((state) => state.activeId)
@@ -179,6 +181,10 @@ export const MemorySettings = () => {
                       ) : null}
                       <div className={styles.itemMeta}>
                         <span className={styles.badge}>
+                          {item.kind === 'preference'
+                            ? t('memoryKindPreference')
+                            : t('memoryKindFact')}
+                          {' · '}
                           {item.source === 'auto' ? t('memorySourceAuto') : t('memorySourceManual')}
                         </span>
                         <div className={styles.itemActions}>
@@ -244,9 +250,12 @@ export const MemorySettings = () => {
                 {t('memoryPreviewTitle', { from: items.length, to: preview.length })}
               </div>
               <div className={styles.previewList}>
-                {preview.map((text) => (
-                  <div key={text} className={styles.previewItem}>
-                    {text}
+                {preview.map((item) => (
+                  <div key={`${item.kind}:${item.text}`} className={styles.previewItem}>
+                    <span className={styles.kindTag}>
+                      {item.kind === 'preference' ? t('memoryKindPreference') : t('memoryKindFact')}
+                    </span>
+                    {item.text}
                   </div>
                 ))}
               </div>
