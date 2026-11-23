@@ -18,6 +18,10 @@ import { Select } from '../base/Select.js'
 import { showToast } from '../base/toastState.js'
 import styles from './MemorySettings.module.css'
 
+/** 超过这个长度（含换行）就认为是长记忆，默认折叠 */
+const LONG_TEXT_LENGTH = 80
+const isLong = (text: string) => text.length > LONG_TEXT_LENGTH || text.includes('\n')
+
 /**
  * 记忆管理：用户写下希望模型长期记住的事实与偏好，随每轮请求注入系统提示词。
  * 全部保存在本机浏览器，不上传。
@@ -33,6 +37,8 @@ export const MemorySettings = () => {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editText, setEditText] = useState('')
   const [extracting, setExtracting] = useState(false)
+  /** 已展开的长记忆 id；默认折叠，只显示前几行 */
+  const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const activeId = useChatStore((state) => state.activeId)
 
   const submit = () => {
@@ -136,7 +142,33 @@ export const MemorySettings = () => {
                     </>
                   ) : (
                     <>
-                      <div className={styles.itemText}>{item.text}</div>
+                      <div
+                        className={
+                          expanded.has(item.id) ? styles.itemText : `${styles.itemText} ${styles.clamped}`
+                        }
+                      >
+                        {item.text}
+                      </div>
+                      {/* 长记忆默认折叠，点开再看全文 */}
+                      {isLong(item.text) || expanded.has(item.id) ? (
+                        <button
+                          type="button"
+                          className={styles.link}
+                          onClick={() =>
+                            setExpanded((prev) => {
+                              const next = new Set(prev)
+                              if (next.has(item.id)) {
+                                next.delete(item.id)
+                              } else {
+                                next.add(item.id)
+                              }
+                              return next
+                            })
+                          }
+                        >
+                          {t(expanded.has(item.id) ? 'memoryCollapse' : 'memoryExpand')}
+                        </button>
+                      ) : null}
                       <div className={styles.itemMeta}>
                         <span className={styles.badge}>
                           {item.source === 'auto' ? t('memorySourceAuto') : t('memorySourceManual')}
