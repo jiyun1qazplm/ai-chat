@@ -316,4 +316,5 @@ export const zh = {
   memoryExtracting: '正在提取...',
   memoryExtracted: '已提取 {count} 条记忆',
   memoryNothingFound: '这次没有发现值得记住的内容',
+  settingDialogAsideMemoryOptionLabel: '长期记忆',
 } as const
