@@ -21,7 +21,7 @@ import {
   prepareDraftMessage,
 } from './drafts.js'
 import { createLatestReminder } from './latestReminder.js'
-import { memoryPrompt, useMemory, addMemory } from '../memory.js'
+import { memoryPrompt, addMemory, tickMemoryTurn, resetMemoryTurns } from '../memory.js'
 import { extractMemories } from '../memoryExtract.js'
 import {
   applyEvent,
@@ -647,6 +647,8 @@ export const extractMemoriesFromSession = async (
   }
   try {
     const candidates = await extractMemories(transcript, signal)
+    // 提取过就重新开始计数，避免紧接着又触发一次
+    resetMemoryTurns()
     const added: string[] = []
     for (const text of candidates) {
       if (addMemory(text, 'auto')) {
@@ -1327,8 +1329,8 @@ const streamReply = async (sessionId: string, initial: AssistantMessage, request
           }
         }
         reply = settleReply(reply, 'done', Date.now())
-        // 开启自动记忆时，顺手从本轮对话里提取可长期保留的事实
-        if (useMemory.getState().enabled && useMemory.getState().autoExtract) {
+        // 自动记忆按用户设定的轮数触发：数到第 N 轮才提取一次
+        if (tickMemoryTurn()) {
           void extractMemoriesFromSession(sessionId)
         }
         // 兼容接口没有标题生成能力，用提问的前半句作为会话标题
