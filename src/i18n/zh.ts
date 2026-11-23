@@ -317,4 +317,7 @@ export const zh = {
   memoryExtracted: '已提取 {count} 条记忆',
   memoryNothingFound: '这次没有发现值得记住的内容',
   settingDialogAsideMemoryOptionLabel: '长期记忆',
+  memoryAutoEvery: '提取间隔（轮）',
+  memoryAutoEveryHint: '每 {every} 轮对话总结一次，已进行 {done} 轮',
+  settingDialogAsideAppearanceOptionLabel: '个性化',
 } as const
