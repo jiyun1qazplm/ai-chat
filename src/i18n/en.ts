@@ -336,4 +336,7 @@ export const en = {
   memoryExtracted: 'Extracted {count} memories',
   memoryNothingFound: 'Nothing worth remembering was found',
   settingDialogAsideMemoryOptionLabel: 'Memory',
+  memoryAutoEvery: 'Interval (turns)',
+  memoryAutoEveryHint: 'Summarize every {every} turns; {done} so far',
+  settingDialogAsideAppearanceOptionLabel: 'Appearance',
 } satisfies Record<keyof typeof zh, string>
