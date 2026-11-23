@@ -320,4 +320,6 @@ export const zh = {
   memoryAutoEvery: '提取间隔（轮）',
   memoryAutoEveryHint: '每 {every} 轮对话总结一次，已进行 {done} 轮',
   settingDialogAsideAppearanceOptionLabel: '个性化',
+  memoryExpand: '展开全文',
+  memoryCollapse: '收起',
 } as const
