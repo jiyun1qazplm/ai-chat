@@ -2,6 +2,7 @@ import clsx from 'clsx'
 import { useRef, useState, type ReactNode } from 'react'
 import {
   IconDarkOutline16,
+  IconThinkOutline16,
   IconDataOutline16,
   IconDownloadOutline16,
   IconFollowsystemOutline16,
@@ -67,6 +68,7 @@ const sections: { value: SettingsSection; label: TranslationKey; icon: ReactNode
     label: 'settingDialogAsideGeneralOptionLabel',
     icon: <IconSettingsOutline16 />,
   },
+  { value: 'memory', label: 'settingDialogAsideMemoryOptionLabel', icon: <IconThinkOutline16 /> },
   { value: 'data', label: 'settingDialogAsideDataOptionLabel', icon: <IconDataOutline16 /> },
 ]
 
@@ -114,7 +116,6 @@ const SettingsContent = () => {
           {section === 'general' ? (
             <>
               <ThemeSetting />
-              <MemorySettings />
               <AppearanceSettings />
               <BackgroundSetting />
               <LocaleSetting />
@@ -122,6 +123,8 @@ const SettingsContent = () => {
               <ExternalTtsFields />
               <LocationSetting />
             </>
+          ) : section === 'memory' ? (
+            <MemorySettings />
           ) : (
             <>
               <ProviderField />
