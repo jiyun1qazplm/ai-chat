@@ -68,6 +68,11 @@ const sections: { value: SettingsSection; label: TranslationKey; icon: ReactNode
     label: 'settingDialogAsideGeneralOptionLabel',
     icon: <IconSettingsOutline16 />,
   },
+  {
+    value: 'appearance',
+    label: 'settingDialogAsideAppearanceOptionLabel',
+    icon: <IconLightOutline16 />,
+  },
   { value: 'memory', label: 'settingDialogAsideMemoryOptionLabel', icon: <IconThinkOutline16 /> },
   { value: 'data', label: 'settingDialogAsideDataOptionLabel', icon: <IconDataOutline16 /> },
 ]
@@ -115,13 +120,16 @@ const SettingsContent = () => {
         <div role="tabpanel" className={styles.content}>
           {section === 'general' ? (
             <>
-              <ThemeSetting />
-              <AppearanceSettings />
-              <BackgroundSetting />
               <LocaleSetting />
               <TtsEngineSetting />
               <ExternalTtsFields />
               <LocationSetting />
+            </>
+          ) : section === 'appearance' ? (
+            <>
+              <ThemeSetting />
+              <AppearanceSettings />
+              <BackgroundSetting />
             </>
           ) : section === 'memory' ? (
             <MemorySettings />
