@@ -11,6 +11,13 @@
   background: color-mix(in srgb, var(--dsw-specific-input-major) 28%, transparent);
   -webkit-backdrop-filter: blur(10px) saturate(1.6);
   backdrop-filter: blur(10px) saturate(1.6);
+  /*
+   * 右侧两个角做圆角，和移动端抽屉、顶栏胶囊保持一致。
+   * 只圆右侧，左侧仍贴屏幕边缘，避免与窗口边之间出现缝隙。
+   */
+  border-top-right-radius: 24px;
+  border-bottom-right-radius: 24px;
+  overflow: hidden;
 }
 
 .top {
