@@ -125,3 +125,17 @@
   color: var(--dsw-alias-label-secondary);
   font-size: 13px;
 }
+
+/* 轮数调节 */
+.stepper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stepperValue {
+  min-width: 28px;
+  color: var(--dsw-alias-label-primary);
+  font-size: 14px;
+  text-align: center;
+}
