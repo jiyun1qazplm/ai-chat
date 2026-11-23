@@ -135,3 +135,32 @@ export const extractMemories = async (
   const output = await collectText(EXTRACT_SYSTEM, text, signal)
   return parseExtracted(output)
 }
+
+/** 整理记忆用的指令：要求合并重复、更新过时、丢弃矛盾 */
+const CONSOLIDATE_SYSTEM = `你是一个记忆整理助手。用户给出了他的长期记忆列表，请整理成更精炼的版本。
+
+整理规则：
+1. 合并重复或高度相似的条目
+2. 更新过时信息：明显已经过去的临时状态（如"正在出差""这周在准备考试"）标记为历史，或改写为已完成的表述
+3. 删除相互矛盾中较旧的那条
+4. 保留所有稳定的事实与偏好（身份、职业、所在地、习惯、禁忌、长期目标）
+5. 每条保持独立、简短，不超过 30 个字
+
+输出格式：每行一条，以「- 」开头，最多 20 条。
+不要添加原列表里没有的新信息，不要解释，不要输出其他文字。`
+
+/**
+ * 整理记忆：交给模型去重、合并与更新，返回整理后的条目文本。
+ * 只返回新列表，由调用方决定如何应用（保留手动条目的元信息等）。
+ */
+export const consolidateMemories = async (
+  texts: string[],
+  signal: AbortSignal
+): Promise<string[]> => {
+  if (texts.length === 0) {
+    return []
+  }
+  const input = texts.map((text) => `- ${text}`).join('\n')
+  const output = await collectText(CONSOLIDATE_SYSTEM, input, signal)
+  return parseExtracted(output)
+}
