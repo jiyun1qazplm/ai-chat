@@ -328,4 +328,6 @@ export const zh = {
   memoryFailed: '操作失败，请稍后再试',
   memoryPreviewTitle: '整理结果：{from} 条 → {to} 条（确认后替换）',
   memoryApply: '应用整理结果',
+  memoryKindFact: '事实',
+  memoryKindPreference: '偏好',
 } as const
