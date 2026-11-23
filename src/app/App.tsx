@@ -77,7 +77,11 @@ export const App = () => {
 
   return (
     <>
-      <div ref={frameRef} className={styles.frame} data-has-background={hasBackground ? 'true' : undefined}>
+      <div
+        ref={frameRef}
+        className={styles.frame}
+        data-has-background={hasBackground ? 'true' : undefined}
+      >
         {isMobile ? <MobileSider /> : siderCollapsed ? null : <Sider />}
         <main className={styles.main}>
           {saveError ? (
