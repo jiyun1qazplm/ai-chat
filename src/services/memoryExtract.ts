@@ -14,11 +14,18 @@ import type { MessageStreamEvent } from './api/types.js'
 import { useSettings } from './settings.js'
 
 /** 提取用的指令：要求简短、去重、只保留长期有效的信息 */
-const EXTRACT_SYSTEM = `你是一个信息提取助手。阅读用户提供的对话，找出值得长期记住的关于用户的事实与偏好。
+const EXTRACT_SYSTEM = `你是一个信息提取助手。阅读用户提供的对话，找出值得长期记住的内容。
 
-只提取这类内容：
-- 用户的身份、职业、所在地、语言偏好
-- 稳定的偏好与禁忌（饮食、风格、称呼、回答长度）
+分成两类提取：
+
+【回答偏好】用户希望回答怎么给：
+- 长度（如"回答简短"）、语气（如"直接一点"）
+- 格式（如"多用列表"）、语言（如"用中文回答"）
+- 称呼方式、忌讳的话题
+
+【用户事实】关于用户本身：
+- 身份、职业、所在地
+- 稳定习惯与禁忌（饮食、作息）
 - 正在长期进行的项目或目标
 
 不要提取：
@@ -26,8 +33,11 @@ const EXTRACT_SYSTEM = `你是一个信息提取助手。阅读用户提供的�
 - 对话里出现的第三方隐私
 - 模型自己说过的话
 
-输出格式：每行一条，以「- 」开头，每条不超过 25 个字，最多 5 条。
-没有值得记住的内容就只输出「- 无」。不要输出其他任何文字。`
+输出格式：每行一条，行首标记类别：
+[p] 回答偏好的内容
+[f] 用户事实的内容
+每条不超过 25 个字，最多 6 条。
+没有值得记住的内容就只输出「无」。不要输出其他任何文字。`
 
 /** 从消息里拼出干净的对话文本，供模型阅读 */
 const toTranscript = (messages: { role: string; content: string }[]): string =>
@@ -112,13 +122,30 @@ const collectText = async (
   return text
 }
 
-/** 解析模型输出：只保留「- 」开头的行，过滤「无」与空行 */
-export const parseExtracted = (text: string): string[] =>
+/** 提取结果：文本与类别 */
+export type ExtractedMemory = { text: string; kind: 'fact' | 'preference' }
+
+/**
+ * 解析模型输出：识别 [p]/[f] 前缀，兼容模型仍用列表符号的情况。
+ * 没有前缀的行按事实处理，过滤「无」与空行。
+ */
+export const parseExtracted = (text: string): ExtractedMemory[] =>
   text
     .split('\n')
     .map((line) => line.replace(/^[-*•]\s*/, '').trim())
     .filter((line) => line && line !== '无' && !line.startsWith('无'))
-    .slice(0, 5)
+    .map((line) => {
+      const tagged = /^\[(p|f)\]\s*(.+)$/i.exec(line)
+      if (tagged) {
+        return {
+          kind: tagged[1].toLowerCase() === 'p' ? 'preference' : 'fact',
+          text: tagged[2].trim(),
+        } as ExtractedMemory
+      }
+      return { kind: 'fact', text: line } as ExtractedMemory
+    })
+    .filter((item) => item.text)
+    .slice(0, 6)
 
 /**
  * 从给定对话里提取记忆候选。
@@ -127,7 +154,7 @@ export const parseExtracted = (text: string): string[] =>
 export const extractMemories = async (
   transcript: { role: string; content: string }[],
   signal: AbortSignal
-): Promise<string[]> => {
+): Promise<ExtractedMemory[]> => {
   const text = toTranscript(transcript)
   if (!text.trim()) {
     return []
@@ -146,7 +173,7 @@ const CONSOLIDATE_SYSTEM = `你是一个记忆整理助手。用户给出了他�
 4. 保留所有稳定的事实与偏好（身份、职业、所在地、习惯、禁忌、长期目标）
 5. 每条保持独立、简短，不超过 30 个字
 
-输出格式：每行一条，以「- 」开头，最多 20 条。
+输出格式：每行一条，保留原条目的类别标记（[p] 回答偏好 / [f] 用户事实），最多 20 条。
 不要添加原列表里没有的新信息，不要解释，不要输出其他文字。`
 
 /**
@@ -156,11 +183,11 @@ const CONSOLIDATE_SYSTEM = `你是一个记忆整理助手。用户给出了他�
 export const consolidateMemories = async (
   texts: string[],
   signal: AbortSignal
-): Promise<string[]> => {
+): Promise<ExtractedMemory[]> => {
   if (texts.length === 0) {
     return []
   }
-  const input = texts.map((text) => `- ${text}`).join('\n')
+  const input = texts.join('\n')
   const output = await collectText(CONSOLIDATE_SYSTEM, input, signal)
   return parseExtracted(output)
 }
