@@ -7,10 +7,13 @@ import {
   setMemoryAutoExtract,
   setMemoryAutoEvery,
   MEMORY_AUTO_RANGE,
+  applyConsolidated,
+  memoryTexts,
   setMemoryEnabled,
   updateMemory,
   useMemory,
 } from '../../services/memory.js'
+import { consolidateMemories } from '../../services/memoryExtract.js'
 import { extractMemoriesFromSession } from '../../services/chat/store.js'
 import { useChatStore } from '../../services/chat/store.js'
 import { Button } from '../base/Button.js'
@@ -37,6 +40,9 @@ export const MemorySettings = () => {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editText, setEditText] = useState('')
   const [extracting, setExtracting] = useState(false)
+  const [consolidating, setConsolidating] = useState(false)
+  /** 整理结果预览；用户确认后才替换，避免直接覆盖 */
+  const [preview, setPreview] = useState<string[] | null>(null)
   /** 已展开的长记忆 id；默认折叠，只显示前几行 */
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const activeId = useChatStore((state) => state.activeId)
@@ -144,7 +150,9 @@ export const MemorySettings = () => {
                     <>
                       <div
                         className={
-                          expanded.has(item.id) ? styles.itemText : `${styles.itemText} ${styles.clamped}`
+                          expanded.has(item.id)
+                            ? styles.itemText
+                            : `${styles.itemText} ${styles.clamped}`
                         }
                       >
                         {item.text}
@@ -199,6 +207,69 @@ export const MemorySettings = () => {
               ))
             )}
           </div>
+
+          {items.length > 1 ? (
+            <Button
+              size="s"
+              variant="outlined"
+              block
+              disabled={consolidating}
+              onClick={async () => {
+                setConsolidating(true)
+                try {
+                  const texts = await consolidateMemories(
+                    memoryTexts(),
+                    new AbortController().signal
+                  )
+                  if (texts.length > 0) {
+                    // 先预览，用户点确认才替换
+                    setPreview(texts)
+                  } else {
+                    showToast({ key: 'memoryNothingFound' })
+                  }
+                } catch {
+                  showToast({ key: 'memoryFailed', type: 'error' })
+                } finally {
+                  setConsolidating(false)
+                }
+              }}
+            >
+              {t(consolidating ? 'memoryConsolidating' : 'memoryConsolidate')}
+            </Button>
+          ) : null}
+
+          {preview ? (
+            <div className={styles.preview}>
+              <div className={styles.previewTitle}>
+                {t('memoryPreviewTitle', { from: items.length, to: preview.length })}
+              </div>
+              <div className={styles.previewList}>
+                {preview.map((text) => (
+                  <div key={text} className={styles.previewItem}>
+                    {text}
+                  </div>
+                ))}
+              </div>
+              <div className={styles.itemActions}>
+                <Button size="s" variant="outlined" onClick={() => setPreview(null)}>
+                  {t('cancel')}
+                </Button>
+                <Button
+                  size="s"
+                  onClick={() => {
+                    applyConsolidated(preview)
+                    showToast({
+                      key: 'memoryConsolidated',
+                      params: { from: items.length, to: preview.length },
+                    })
+                    setPreview(null)
+                  }}
+                >
+                  {t('memoryApply')}
+                </Button>
+              </div>
+            </div>
+          ) : null}
 
           {items.length > 0 ? (
             <Button
