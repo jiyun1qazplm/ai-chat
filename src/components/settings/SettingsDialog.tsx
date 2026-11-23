@@ -49,6 +49,7 @@ import {
 import { closeSettings, useSettingsDialog, type SettingsSection } from './settingsDialogState.js'
 import { ExternalTtsFields, TtsEngineSetting } from './TtsSettings.js'
 import { BackgroundSetting } from './BackgroundSetting.js'
+import { MemorySettings } from './MemorySettings.js'
 import styles from './Settings.module.css'
 
 /**
@@ -113,6 +114,7 @@ const SettingsContent = () => {
           {section === 'general' ? (
             <>
               <ThemeSetting />
+              <MemorySettings />
               <AppearanceSettings />
               <BackgroundSetting />
               <LocaleSetting />
