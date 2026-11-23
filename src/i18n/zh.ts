@@ -322,4 +322,10 @@ export const zh = {
   settingDialogAsideAppearanceOptionLabel: '个性化',
   memoryExpand: '展开全文',
   memoryCollapse: '收起',
+  memoryConsolidate: '整理记忆',
+  memoryConsolidating: '整理中...',
+  memoryConsolidated: '已整理：{from} 条 → {to} 条',
+  memoryFailed: '操作失败，请稍后再试',
+  memoryPreviewTitle: '整理结果：{from} 条 → {to} 条（确认后替换）',
+  memoryApply: '应用整理结果',
 } as const
