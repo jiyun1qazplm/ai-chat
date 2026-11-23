@@ -5,6 +5,8 @@ import {
   clearMemories,
   removeMemory,
   setMemoryAutoExtract,
+  setMemoryAutoEvery,
+  MEMORY_AUTO_RANGE,
   setMemoryEnabled,
   updateMemory,
   useMemory,
@@ -25,6 +27,8 @@ export const MemorySettings = () => {
   const items = useMemory((state) => state.items)
   const enabled = useMemory((state) => state.enabled)
   const autoExtract = useMemory((state) => state.autoExtract)
+  const autoEvery = useMemory((state) => state.autoExtractEvery)
+  const turns = useMemory((state) => state.turnsSinceExtract)
   const [draft, setDraft] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editText, setEditText] = useState('')
@@ -190,6 +194,38 @@ export const MemorySettings = () => {
               onChange={(value) => setMemoryAutoExtract(value === 'on')}
             />
           </div>
+
+          {/* 每 N 轮提取一次，N 由用户设定 */}
+          {autoExtract ? (
+            <>
+              <div className={styles.row}>
+                <span className={styles.rowLabel}>{t('memoryAutoEvery')}</span>
+                <div className={styles.stepper}>
+                  <Button
+                    size="s"
+                    variant="outlined"
+                    disabled={autoEvery <= MEMORY_AUTO_RANGE.min}
+                    onClick={() => setMemoryAutoEvery(autoEvery - 1)}
+                  >
+                    −
+                  </Button>
+                  <span className={styles.stepperValue}>{autoEvery}</span>
+                  <Button
+                    size="s"
+                    variant="outlined"
+                    disabled={autoEvery >= MEMORY_AUTO_RANGE.max}
+                    onClick={() => setMemoryAutoEvery(autoEvery + 1)}
+                  >
+                    +
+                  </Button>
+                </div>
+              </div>
+              <div className={styles.description}>
+                {t('memoryAutoEveryHint', { every: autoEvery, done: turns })}
+              </div>
+            </>
+          ) : null}
+
           <div className={styles.description}>
             {autoExtract ? t('memoryAutoExtractOn') : t('memoryAutoExtractOff')}
           </div>
