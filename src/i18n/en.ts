@@ -339,4 +339,6 @@ export const en = {
   memoryAutoEvery: 'Interval (turns)',
   memoryAutoEveryHint: 'Summarize every {every} turns; {done} so far',
   settingDialogAsideAppearanceOptionLabel: 'Appearance',
+  memoryExpand: 'Show more',
+  memoryCollapse: 'Show less',
 } satisfies Record<keyof typeof zh, string>
