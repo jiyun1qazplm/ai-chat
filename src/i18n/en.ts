@@ -347,4 +347,6 @@ export const en = {
   memoryFailed: 'Something went wrong, please try again',
   memoryPreviewTitle: 'Tidied: {from} → {to} entries (review before applying)',
   memoryApply: 'Apply result',
+  memoryKindFact: 'Fact',
+  memoryKindPreference: 'Preference',
 } satisfies Record<keyof typeof zh, string>
