@@ -183,3 +183,14 @@
   line-height: 20px;
   word-break: break-word;
 }
+
+/* 记忆类别标签 */
+.kindTag {
+  display: inline-block;
+  margin-right: 6px;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: var(--dsw-alias-interactive-bg-hover);
+  color: var(--dsw-alias-label-caption);
+  font-size: 11px;
+}
