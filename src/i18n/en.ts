@@ -341,4 +341,10 @@ export const en = {
   settingDialogAsideAppearanceOptionLabel: 'Appearance',
   memoryExpand: 'Show more',
   memoryCollapse: 'Show less',
+  memoryConsolidate: 'Tidy up memories',
+  memoryConsolidating: 'Tidying...',
+  memoryConsolidated: 'Tidied: {from} → {to} entries',
+  memoryFailed: 'Something went wrong, please try again',
+  memoryPreviewTitle: 'Tidied: {from} → {to} entries (review before applying)',
+  memoryApply: 'Apply result',
 } satisfies Record<keyof typeof zh, string>
