@@ -314,7 +314,8 @@
     flex: 1 0 auto;
     justify-content: center;
     width: auto;
-    min-width: 108px;
+    /* 四个分栏要在一屏内排下，比原来窄一些 */
+    min-width: 84px;
     margin: 0;
     white-space: nowrap;
 
