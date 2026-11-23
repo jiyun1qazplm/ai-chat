@@ -11,6 +11,13 @@
 
 import { create } from 'zustand'
 
+/**
+ * 记忆类型：
+ * - fact：关于用户的事实（身份、职业、所在地、在做什么）
+ * - preference：希望回答怎么给（长度、语气、格式、禁忌）
+ */
+export type MemoryKind = 'fact' | 'preference'
+
 /** 单条记忆 */
 export type MemoryItem = {
   id: string
@@ -18,6 +25,8 @@ export type MemoryItem = {
   text: string
   /** 手动添加还是自动提取 */
   source: 'manual' | 'auto'
+  /** 这条属于事实记忆还是回答偏好 */
+  kind: MemoryKind
   /** 创建时间戳，用于排序与「多久之前」提示 */
   createdAt: number
 }
@@ -98,6 +107,8 @@ const initialItems = (): MemoryItem[] => {
             id: value.id,
             text: value.text,
             source: value.source === 'auto' ? 'auto' : 'manual',
+            // 旧数据没有 kind，按事实处理
+            kind: value.kind === 'preference' ? 'preference' : 'fact',
             createdAt: typeof value.createdAt === 'number' ? value.createdAt : Date.now(),
           },
         ]
@@ -124,7 +135,11 @@ let counter = 0
 const createMemoryId = () => `mem_${Date.now().toString(36)}_${(counter += 1).toString(36)}`
 
 /** 新增一条记忆；空文本与重复内容会被忽略 */
-export const addMemory = (text: string, source: MemoryItem['source'] = 'manual'): boolean => {
+export const addMemory = (
+  text: string,
+  source: MemoryItem['source'] = 'manual',
+  kind: MemoryKind = 'fact'
+): boolean => {
   const value = text.trim()
   if (!value) {
     return false
@@ -134,7 +149,7 @@ export const addMemory = (text: string, source: MemoryItem['source'] = 'manual')
     return false
   }
   const items = [
-    { id: createMemoryId(), text: value, source, createdAt: Date.now() },
+    { id: createMemoryId(), text: value, source, kind, createdAt: Date.now() },
     ...useMemory.getState().items,
   ]
   persist(items)
@@ -205,31 +220,50 @@ export const resetMemoryTurns = () => {
 
 /**
  * 把记忆拼成提示词片段。
+ * 事实与回答偏好分开写：偏好是行为约束，模型要严格遵守；
+ * 事实只作背景理解，不需要复述。
  * 关闭记忆或没有条目时返回空串，调用方据此跳过注入。
- * 明确告知模型这是用户提供的背景信息，避免被当成指令执行。
  */
 export const memoryPrompt = (): string => {
   const { items, enabled } = useMemory.getState()
   if (!enabled || items.length === 0) {
     return ''
   }
-  const lines = items.map((item) => `- ${item.text}`).join('\n')
-  return [
-    '以下是用户此前提供、希望你在回答时参考的个人信息与偏好（仅供理解背景，不要逐条复述）：',
-    lines,
-  ].join('\n')
+  const facts = items.filter((item) => item.kind !== 'preference')
+  const preferences = items.filter((item) => item.kind === 'preference')
+  const sections: string[] = []
+  if (preferences.length > 0) {
+    sections.push(
+      [
+        '【回答偏好】以下是用户希望的回答方式，请在每次回答时遵守：',
+        ...preferences.map((item) => `- ${item.text}`),
+      ].join('\n')
+    )
+  }
+  if (facts.length > 0) {
+    sections.push(
+      [
+        '【用户背景】以下是用户的个人信息，仅用于理解上下文，不要在回答中逐条复述：',
+        ...facts.map((item) => `- ${item.text}`),
+      ].join('\n')
+    )
+  }
+  return sections.join('\n\n')
 }
 
 /**
  * 用整理后的文本替换记忆列表。
  * 与原有条目完全一致的保留其来源与创建时间，新增的按自动条目处理。
  */
-export const applyConsolidated = (texts: string[]) => {
+export const applyConsolidated = (entries: { text: string; kind: MemoryKind }[]) => {
   const previous = new Map(useMemory.getState().items.map((item) => [item.text, item]))
   const now = Date.now()
-  const items: MemoryItem[] = texts.map((text) => {
+  const items: MemoryItem[] = entries.map(({ text, kind }) => {
     const matched = previous.get(text)
-    return matched ?? { id: createMemoryId(), text, source: 'auto', createdAt: now }
+    // 已存在的条目保留来源与时间，但采用整理后的分类
+    return matched
+      ? { ...matched, kind }
+      : { id: createMemoryId(), text, source: 'auto', kind, createdAt: now }
   })
   persist(items)
   useMemory.setState({ items })
