@@ -219,3 +219,21 @@ export const memoryPrompt = (): string => {
     lines,
   ].join('\n')
 }
+
+/**
+ * 用整理后的文本替换记忆列表。
+ * 与原有条目完全一致的保留其来源与创建时间，新增的按自动条目处理。
+ */
+export const applyConsolidated = (texts: string[]) => {
+  const previous = new Map(useMemory.getState().items.map((item) => [item.text, item]))
+  const now = Date.now()
+  const items: MemoryItem[] = texts.map((text) => {
+    const matched = previous.get(text)
+    return matched ?? { id: createMemoryId(), text, source: 'auto', createdAt: now }
+  })
+  persist(items)
+  useMemory.setState({ items })
+}
+
+/** 供整理前读取当前条目文本 */
+export const memoryTexts = (): string[] => useMemory.getState().items.map((item) => item.text)
