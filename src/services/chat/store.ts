@@ -21,10 +21,13 @@ import {
   prepareDraftMessage,
 } from './drafts.js'
 import { createLatestReminder } from './latestReminder.js'
+import { memoryPrompt, useMemory, addMemory } from '../memory.js'
+import { extractMemories } from '../memoryExtract.js'
 import {
   applyEvent,
   canContinueReply,
   getContextRounds,
+  getReplyText,
   settleReply,
   toRequestMessages,
 } from './reply.js'
@@ -77,6 +80,19 @@ const resolveModel = (
     return sessionModel.trim()
   }
   return known || !recorded ? fallback || MODEL : recorded
+}
+
+/**
+ * 组合系统提示词：对话自身的提示词在前，用户记忆在后。
+ * 记忆关闭或为空时只返回对话提示词，不额外发送内容。
+ */
+const composeSystem = (base?: string): string => {
+  const memory = memoryPrompt()
+  const prompt = base?.trim() ?? ''
+  if (!memory) {
+    return prompt
+  }
+  return prompt ? `${prompt}\n\n${memory}` : memory
 }
 
 /** 所有生成请求统一携带的助手身份说明 */
@@ -607,6 +623,42 @@ export const setSessionModel = (sessionId: string, model: string) => {
  * 提交指定会话的最新草稿；null 表示新建会话。
  * 同步接收成功才清空草稿，附件原件由会话接管；保存失败仍通过保存入口重试。
  */
+/**
+ * 从会话当前路径提取记忆。
+ * 失败时静默忽略：这是后台附加动作，不该打扰用户或影响对话。
+ */
+export const extractMemoriesFromSession = async (
+  sessionId: string,
+  signal = new AbortController().signal
+): Promise<string[]> => {
+  const session = getSession(sessionId)
+  if (!session) {
+    return []
+  }
+  const transcript = getVisibleMessages(session)
+    .slice(-12)
+    .map((message) => ({
+      role: message.role,
+      content: message.role === 'assistant' ? getReplyText(message) : message.content,
+    }))
+    .filter((message) => message.content.trim())
+  if (transcript.length === 0) {
+    return []
+  }
+  try {
+    const candidates = await extractMemories(transcript, signal)
+    const added: string[] = []
+    for (const text of candidates) {
+      if (addMemory(text, 'auto')) {
+        added.push(text)
+      }
+    }
+    return added
+  } catch {
+    return []
+  }
+}
+
 export const sendMessage = (targetSessionId: string | null) => {
   if (get().importingHistory || !get().ready) {
     return false
@@ -1169,7 +1221,7 @@ const streamReply = async (sessionId: string, initial: AssistantMessage, request
                 baseUrl: settings.geminiBaseUrl || DEFAULT_GEMINI_BASE_URL,
                 apiKey: settings.geminiApiKey ?? '',
                 model: resolveModel(initial.model, settings, sessionModel),
-                system: prepared.systemPrompt ?? '',
+                system: composeSystem(prepared.systemPrompt),
                 messages,
                 images: await collectImages(prepared, controller.signal),
                 // 开启思考给预算；关闭设 0 让模型不思考
@@ -1181,7 +1233,7 @@ const streamReply = async (sessionId: string, initial: AssistantMessage, request
                   baseUrl: settings.claudeBaseUrl || DEFAULT_CLAUDE_BASE_URL,
                   apiKey: settings.claudeApiKey ?? '',
                   model: resolveModel(initial.model, settings, sessionModel),
-                  system: prepared.systemPrompt ?? '',
+                  system: composeSystem(prepared.systemPrompt),
                   messages,
                   images: await collectImages(prepared, controller.signal),
                   maxTokens: CLAUDE_MAX_TOKENS,
@@ -1204,7 +1256,7 @@ const streamReply = async (sessionId: string, initial: AssistantMessage, request
                       settings.reasoningMode,
                       settings.reasoningOnMode
                     ),
-                    system: prepared.systemPrompt ?? '',
+                    system: composeSystem(prepared.systemPrompt),
                     messages,
                     images: await collectImages(prepared, controller.signal),
                     search: async (query, searchSignal) => {
@@ -1234,7 +1286,7 @@ const streamReply = async (sessionId: string, initial: AssistantMessage, request
                     settings.reasoningOnMode
                   ),
                   // 只用本对话填写的提示词；没填就不发 system
-                  system: prepared.systemPrompt ?? '',
+                  system: composeSystem(prepared.systemPrompt),
                   messages,
                   images: await collectImages(prepared, controller.signal),
                   signal: controller.signal,
@@ -1243,7 +1295,7 @@ const streamReply = async (sessionId: string, initial: AssistantMessage, request
                 settings.apiKey ?? '',
                 {
                   model: resolveModel(initial.model, settings) as ChatModel,
-                  system: SYSTEM_PROMPT,
+                  system: composeSystem(SYSTEM_PROMPT),
                   messages,
                   thinking: { type: initial.thinking ? 'enabled' : 'disabled' },
                   safety_check: SAFETY_CHECK,
@@ -1275,6 +1327,10 @@ const streamReply = async (sessionId: string, initial: AssistantMessage, request
           }
         }
         reply = settleReply(reply, 'done', Date.now())
+        // 开启自动记忆时，顺手从本轮对话里提取可长期保留的事实
+        if (useMemory.getState().enabled && useMemory.getState().autoExtract) {
+          void extractMemoriesFromSession(sessionId)
+        }
         // 兼容接口没有标题生成能力，用提问的前半句作为会话标题
         if (compatible && titleRequests.has(controller) && !controller.signal.aborted) {
           const title = localTitle(prepared.question.content)
