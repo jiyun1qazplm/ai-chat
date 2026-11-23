@@ -335,4 +335,5 @@ export const en = {
   memoryExtracting: 'Extracting...',
   memoryExtracted: 'Extracted {count} memories',
   memoryNothingFound: 'Nothing worth remembering was found',
+  settingDialogAsideMemoryOptionLabel: 'Memory',
 } satisfies Record<keyof typeof zh, string>
