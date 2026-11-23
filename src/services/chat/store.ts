@@ -650,9 +650,9 @@ export const extractMemoriesFromSession = async (
     // 提取过就重新开始计数，避免紧接着又触发一次
     resetMemoryTurns()
     const added: string[] = []
-    for (const text of candidates) {
-      if (addMemory(text, 'auto')) {
-        added.push(text)
+    for (const item of candidates) {
+      if (addMemory(item.text, 'auto', item.kind)) {
+        added.push(item.text)
       }
     }
     return added
