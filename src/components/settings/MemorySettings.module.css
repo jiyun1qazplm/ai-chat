@@ -152,3 +152,34 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+/* 整理结果预览 */
+.preview {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--dsw-alias-brand-primary);
+  border-radius: 12px;
+}
+
+.previewTitle {
+  color: var(--dsw-alias-label-primary);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.previewList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 30vh;
+  overflow-y: auto;
+}
+
+.previewItem {
+  color: var(--dsw-alias-label-secondary);
+  font-size: 13px;
+  line-height: 20px;
+  word-break: break-word;
+}
