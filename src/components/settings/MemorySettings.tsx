@@ -1,0 +1,200 @@
+import { useState } from 'react'
+import { useTranslate } from '../../i18n/index.js'
+import {
+  addMemory,
+  clearMemories,
+  removeMemory,
+  setMemoryAutoExtract,
+  setMemoryEnabled,
+  updateMemory,
+  useMemory,
+} from '../../services/memory.js'
+import { extractMemoriesFromSession } from '../../services/chat/store.js'
+import { useChatStore } from '../../services/chat/store.js'
+import { Button } from '../base/Button.js'
+import { Select } from '../base/Select.js'
+import { showToast } from '../base/toastState.js'
+import styles from './MemorySettings.module.css'
+
+/**
+ * 记忆管理：用户写下希望模型长期记住的事实与偏好，随每轮请求注入系统提示词。
+ * 全部保存在本机浏览器，不上传。
+ */
+export const MemorySettings = () => {
+  const t = useTranslate()
+  const items = useMemory((state) => state.items)
+  const enabled = useMemory((state) => state.enabled)
+  const autoExtract = useMemory((state) => state.autoExtract)
+  const [draft, setDraft] = useState('')
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editText, setEditText] = useState('')
+  const [extracting, setExtracting] = useState(false)
+  const activeId = useChatStore((state) => state.activeId)
+
+  const submit = () => {
+    if (!draft.trim()) {
+      return
+    }
+    if (addMemory(draft)) {
+      setDraft('')
+      showToast({ key: 'memoryAdded' })
+    } else {
+      showToast({ key: 'memoryDuplicate', type: 'error' })
+    }
+  }
+
+  return (
+    <div className={styles.wrapper}>
+      <div className={styles.header}>
+        <div className={styles.label}>{t('settingsMemory')}</div>
+        <Select
+          ariaLabel={t('settingsMemory')}
+          value={enabled ? 'on' : 'off'}
+          options={[
+            { value: 'off' as const, label: t('memoryOff') },
+            { value: 'on' as const, label: t('memoryOn') },
+          ]}
+          onChange={(value) => setMemoryEnabled(value === 'on')}
+        />
+      </div>
+      <div className={styles.description}>{t('settingsMemoryDescription')}</div>
+
+      {enabled ? (
+        <>
+          <textarea
+            className={styles.input}
+            rows={2}
+            placeholder={t('memoryPlaceholder')}
+            value={draft}
+            onChange={(event) => setDraft(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
+                event.preventDefault()
+                submit()
+              }
+            }}
+          />
+          <Button size="s" block disabled={!draft.trim()} onClick={submit}>
+            {t('memoryAdd')}
+          </Button>
+
+          {/* 手动触发一次提取，不开启自动也能用 */}
+          <Button
+            size="s"
+            variant="outlined"
+            block
+            disabled={extracting || !activeId}
+            onClick={async () => {
+              if (!activeId) {
+                return
+              }
+              setExtracting(true)
+              const added = await extractMemoriesFromSession(activeId)
+              setExtracting(false)
+              showToast(
+                added.length > 0
+                  ? { key: 'memoryExtracted', params: { count: added.length } }
+                  : { key: 'memoryNothingFound' }
+              )
+            }}
+          >
+            {t(extracting ? 'memoryExtracting' : 'memoryExtractNow')}
+          </Button>
+
+          <div className={styles.list}>
+            {items.length === 0 ? (
+              <div className={styles.empty}>{t('memoryEmpty')}</div>
+            ) : (
+              items.map((item) => (
+                <div key={item.id} className={styles.item}>
+                  {editingId === item.id ? (
+                    <>
+                      <textarea
+                        className={styles.input}
+                        rows={2}
+                        value={editText}
+                        onChange={(event) => setEditText(event.target.value)}
+                      />
+                      <div className={styles.itemActions}>
+                        <Button size="s" variant="outlined" onClick={() => setEditingId(null)}>
+                          {t('cancel')}
+                        </Button>
+                        <Button
+                          size="s"
+                          onClick={() => {
+                            updateMemory(item.id, editText)
+                            setEditingId(null)
+                          }}
+                        >
+                          {t('confirm')}
+                        </Button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className={styles.itemText}>{item.text}</div>
+                      <div className={styles.itemMeta}>
+                        <span className={styles.badge}>
+                          {item.source === 'auto' ? t('memorySourceAuto') : t('memorySourceManual')}
+                        </span>
+                        <div className={styles.itemActions}>
+                          <button
+                            type="button"
+                            className={styles.link}
+                            onClick={() => {
+                              setEditingId(item.id)
+                              setEditText(item.text)
+                            }}
+                          >
+                            {t('memoryEdit')}
+                          </button>
+                          <button
+                            type="button"
+                            className={styles.danger}
+                            onClick={() => removeMemory(item.id)}
+                          >
+                            {t('delete')}
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+
+          {items.length > 0 ? (
+            <Button
+              size="s"
+              variant="dangerOutlined"
+              block
+              onClick={() => {
+                clearMemories()
+                showToast({ key: 'memoryCleared' })
+              }}
+            >
+              {t('memoryClearAll')}
+            </Button>
+          ) : null}
+
+          <div className={styles.row}>
+            <span className={styles.rowLabel}>{t('memoryAutoExtract')}</span>
+            <Select
+              ariaLabel={t('memoryAutoExtract')}
+              value={autoExtract ? 'on' : 'off'}
+              options={[
+                { value: 'off' as const, label: t('memoryOff') },
+                { value: 'on' as const, label: t('memoryOn') },
+              ]}
+              onChange={(value) => setMemoryAutoExtract(value === 'on')}
+            />
+          </div>
+          <div className={styles.description}>
+            {autoExtract ? t('memoryAutoExtractOn') : t('memoryAutoExtractOff')}
+          </div>
+        </>
+      ) : null}
+    </div>
+  )
+}
