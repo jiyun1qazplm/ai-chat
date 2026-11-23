@@ -28,12 +28,34 @@ type MemoryState = {
   enabled: boolean
   /** 是否允许自动提取 */
   autoExtract: boolean
+  /** 每多少轮对话自动提取一次，1-20 */
+  autoExtractEvery: number
+  /** 距离上次自动提取已经过去的轮数（用于计数触发） */
+  turnsSinceExtract: number
+}
+
+/** 自动提取间隔限制在 1-20 轮，默认 10 */
+const AUTO_EVERY_MIN = 1
+const AUTO_EVERY_MAX = 20
+const AUTO_EVERY_DEFAULT = 10
+
+const initialAutoEvery = (): number => {
+  const saved = read('chat-demo:memory-auto-every')
+  if (saved === null || saved.trim() === '') {
+    return AUTO_EVERY_DEFAULT
+  }
+  const value = Number(saved)
+  return Number.isFinite(value) && value >= AUTO_EVERY_MIN && value <= AUTO_EVERY_MAX
+    ? Math.round(value)
+    : AUTO_EVERY_DEFAULT
 }
 
 const KEYS = {
   items: 'chat-demo:memory-items',
   enabled: 'chat-demo:memory-enabled',
   autoExtract: 'chat-demo:memory-auto',
+  autoExtractEvery: 'chat-demo:memory-auto-every',
+  turns: 'chat-demo:memory-turns',
 } as const
 
 const read = (key: string) => {
@@ -91,6 +113,8 @@ export const useMemory = create<MemoryState>(() => ({
   items: initialItems(),
   enabled: read(KEYS.enabled) !== 'false',
   autoExtract: read(KEYS.autoExtract) === 'true',
+  autoExtractEvery: initialAutoEvery(),
+  turnsSinceExtract: Number(read(KEYS.turns)) || 0,
 }))
 
 const persist = (items: MemoryItem[]) => write(KEYS.items, JSON.stringify(items))
@@ -149,6 +173,34 @@ export const setMemoryEnabled = (enabled: boolean) => {
 export const setMemoryAutoExtract = (autoExtract: boolean) => {
   write(KEYS.autoExtract, String(autoExtract))
   useMemory.setState({ autoExtract })
+}
+
+export const setMemoryAutoEvery = (every: number) => {
+  const value = Math.min(AUTO_EVERY_MAX, Math.max(AUTO_EVERY_MIN, Math.round(every)))
+  write(KEYS.autoExtractEvery, String(value))
+  useMemory.setState({ autoExtractEvery: value })
+}
+
+export const MEMORY_AUTO_RANGE = { min: AUTO_EVERY_MIN, max: AUTO_EVERY_MAX }
+
+/**
+ * 记一轮对话。返回 true 表示已达到间隔、该触发提取，并把计数归零。
+ * 关闭自动提取时只累加不触发，用户重新开启后从当前计数继续。
+ */
+export const tickMemoryTurn = (): boolean => {
+  const state = useMemory.getState()
+  const next = state.turnsSinceExtract + 1
+  const reached = state.enabled && state.autoExtract && next >= state.autoExtractEvery
+  const value = reached ? 0 : next
+  write(KEYS.turns, String(value))
+  useMemory.setState({ turnsSinceExtract: value })
+  return reached
+}
+
+/** 重置计数：手动提取或清空记忆后调用 */
+export const resetMemoryTurns = () => {
+  write(KEYS.turns, '0')
+  useMemory.setState({ turnsSinceExtract: 0 })
 }
 
 /**
