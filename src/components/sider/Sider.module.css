@@ -137,6 +137,8 @@
 }
 
 .settings {
+  flex: 1;
+  min-width: 0;
   display: flex;
   align-items: center;
   box-sizing: border-box;
@@ -260,5 +262,63 @@
     margin-left: 10px;
     font-size: 16px;
     line-height: 22px;
+  }
+}
+
+/* 多选模式：顶部操作栏 */
+.selectBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  height: 48px;
+  margin: 0 4px 4px;
+  padding: 0 8px;
+}
+
+.selectText {
+  padding: 6px 8px;
+  border: none;
+  border-radius: 10px;
+  background: none;
+  color: var(--dsw-alias-brand-text);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.selectCount {
+  color: var(--dsw-alias-label-secondary);
+  font-size: 13px;
+}
+
+/* 多选模式：底部批量操作 */
+.bulkBottom {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  box-sizing: border-box;
+  height: 64px;
+  padding: 0 4px;
+}
+
+/* 进入多选的入口按钮 */
+.selectEnter {
+  flex-shrink: 0;
+  align-self: center;
+  margin-right: 6px;
+  padding: 6px 10px;
+  border: none;
+  border-radius: 10px;
+  background: none;
+  color: var(--dsw-alias-label-secondary);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--dsw-alias-interactive-bg-hover);
   }
 }
