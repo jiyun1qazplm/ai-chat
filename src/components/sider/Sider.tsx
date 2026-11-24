@@ -4,7 +4,7 @@ import { useTranslate } from '../../i18n/index.js'
 import { IconPanelLeftOutline16, IconSettingsOutline16, NewChatIcon } from '../base/icons.js'
 import { setSiderCollapsed } from '../../services/settings.js'
 import { groupSessions } from '../../services/chat/sessionGroups.js'
-import { newChat, removeSession, useChatStore } from '../../services/chat/store.js'
+import { newChat, removeSession, removeSessions, useChatStore } from '../../services/chat/store.js'
 import type { SessionSummary } from '../../services/chat/types.js'
 import { Button } from '../base/Button.js'
 import { IconButton } from '../base/IconButton.js'
@@ -24,6 +24,21 @@ export const Sider = ({ mobile = false }: { mobile?: boolean }) => {
   const groups = useMemo(() => groupSessions(sessions, now, t), [sessions, now, t])
   const [deleting, setDeleting] = useState<SessionSummary | null>(null)
   const [deletePending, setDeletePending] = useState(false)
+  /** 多选模式：非 null 表示正在选择，集合里是已选中的会话 id */
+  const [selected, setSelected] = useState<Set<string> | null>(null)
+  const [bulkPending, setBulkPending] = useState(false)
+  const [bulkConfirm, setBulkConfirm] = useState(false)
+
+  const toggleSelect = (id: string) =>
+    setSelected((prev) => {
+      const next = new Set(prev ?? [])
+      if (next.has(id)) {
+        next.delete(id)
+      } else {
+        next.add(id)
+      }
+      return next
+    })
 
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout>
@@ -61,19 +76,45 @@ export const Sider = ({ mobile = false }: { mobile?: boolean }) => {
           onClick={() => (mobile ? closeMobileSider() : setSiderCollapsed(true))}
         />
       </div>
-      <button
-        type="button"
-        className={styles.newChat}
-        onClick={() => {
-          newChat()
-          closeMobileSider()
-        }}
-      >
-        <span className={styles.newChatIcon}>
-          <NewChatIcon />
-        </span>
-        {t('newChat')}
-      </button>
+      {selected ? (
+        <div className={styles.selectBar}>
+          <button type="button" className={styles.selectText} onClick={() => setSelected(null)}>
+            {t('selectionCancel')}
+          </button>
+          <span className={styles.selectCount}>
+            {t('selectionCount', { count: selected.size })}
+          </span>
+          <button
+            type="button"
+            className={styles.selectText}
+            onClick={() =>
+              setSelected((prev) =>
+                prev && prev.size === sessions.length
+                  ? new Set()
+                  : new Set(sessions.map((item) => item.id))
+              )
+            }
+          >
+            {selected.size === sessions.length && sessions.length > 0
+              ? t('selectionNone')
+              : t('selectionAll')}
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          className={styles.newChat}
+          onClick={() => {
+            newChat()
+            closeMobileSider()
+          }}
+        >
+          <span className={styles.newChatIcon}>
+            <NewChatIcon />
+          </span>
+          {t('newChat')}
+        </button>
+      )}
       <div className={styles.listWrap}>
         <div className={styles.list}>
           {groups.map((group) => (
@@ -85,20 +126,88 @@ export const Sider = ({ mobile = false }: { mobile?: boolean }) => {
                   session={session}
                   active={session.id === activeId}
                   onDelete={() => setDeleting(session)}
+                  selecting={selected !== null}
+                  selected={selected?.has(session.id) ?? false}
+                  onToggleSelect={() => toggleSelect(session.id)}
+                  onStartSelect={() => setSelected(new Set([session.id]))}
                 />
               ))}
             </div>
           ))}
         </div>
       </div>
-      <div className={styles.bottom}>
-        <button type="button" className={styles.settings} onClick={() => openSettings('general')}>
-          <span className={styles.settingsIcon}>
-            <IconSettingsOutline16 />
-          </span>
-          <span className={styles.settingsLabel}>{t('settings')}</span>
-        </button>
-      </div>
+      {selected ? (
+        <div className={styles.bulkBottom}>
+          <Button
+            variant="dangerOutlined"
+            size="m"
+            block
+            disabled={selected.size === 0 || bulkPending}
+            onClick={() => setBulkConfirm(true)}
+          >
+            {t('selectionDelete', { count: selected.size })}
+          </Button>
+        </div>
+      ) : (
+        <div className={styles.bottom}>
+          <button type="button" className={styles.settings} onClick={() => openSettings('general')}>
+            <span className={styles.settingsIcon}>
+              <IconSettingsOutline16 />
+            </span>
+            <span className={styles.settingsLabel}>{t('settings')}</span>
+          </button>
+          {/* 进入多选的入口：放在设置行右侧，不占额外高度 */}
+          <button
+            type="button"
+            className={styles.selectEnter}
+            onClick={() => setSelected(new Set())}
+          >
+            {t('selectionEnter')}
+          </button>
+        </div>
+      )}
+      {bulkConfirm && selected ? (
+        <Modal
+          title={t('selectionDeleteTitle')}
+          onClose={() => {
+            if (!bulkPending) {
+              setBulkConfirm(false)
+            }
+          }}
+          footer={
+            <>
+              <Button
+                variant="outlined"
+                disabled={bulkPending}
+                onClick={() => setBulkConfirm(false)}
+              >
+                {t('cancel')}
+              </Button>
+              <Button
+                variant="danger"
+                disabled={bulkPending}
+                onClick={async () => {
+                  setBulkPending(true)
+                  const ids = [...selected]
+                  const removed = await removeSessions(ids)
+                  setBulkPending(false)
+                  setBulkConfirm(false)
+                  setSelected(null)
+                  showToast(
+                    removed === ids.length
+                      ? { key: 'selectionDeleted', params: { count: removed } }
+                      : { key: 'selectionDeletePartial', params: { removed, total: ids.length } }
+                  )
+                }}
+              >
+                {t(bulkPending ? 'selectionDeleting' : 'delete')}
+              </Button>
+            </>
+          }
+        >
+          {t('selectionDeleteDescription', { count: selected.size })}
+        </Modal>
+      ) : null}
       {deleting ? (
         <Modal
           title={t('deleteSessionModalContentTitle')}
