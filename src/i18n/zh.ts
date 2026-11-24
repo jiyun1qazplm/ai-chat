@@ -354,4 +354,16 @@ export const zh = {
   memoryModelClear: '恢复默认',
   memoryModelDescription:
     '处理记忆时使用该模型（沿用当前服务商「{provider}」的地址与 Key），适合用便宜的小模型',
+  selectionEnter: '批量选择',
+  selectionCancel: '取消',
+  selectionCount: '已选 {count} 项',
+  selectionAll: '全选',
+  selectionNone: '取消全选',
+  selectionDelete: '删除所选（{count}）',
+  selectionDeleting: '删除中...',
+  selectionDeleteTitle: '删除所选会话',
+  selectionDeleteDescription:
+    '确定删除选中的 {count} 个会话吗？相关附件原件也会一并删除，此操作无法撤销。',
+  selectionDeleted: '已删除 {count} 个会话',
+  selectionDeletePartial: '删除了 {removed} 个，{total} 个未能删除',
 } as const
