@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { createId } from '../../utils/id.js'
-import { ApiError, streamMessage } from '../api/client.js'
+import { ApiError } from '../api/client.js'
+import { streamOfficialWithTools } from '../api/officialTools.js'
 import { runOpenAIAgent, toMessageStreamEvents } from '../api/agent.js'
 import { DEFAULT_CLAUDE_BASE_URL, streamClaudeMessage } from '../api/claude.js'
 import { DEFAULT_GEMINI_BASE_URL, streamGeminiMessage } from '../api/gemini.js'
@@ -11,6 +12,7 @@ import { extractFileIds, getFileErrorCode, isRetryableApiError } from '../api/er
 import { cancelUpload, describeUploadError, uploadAttachment, useUploads } from '../attachments.js'
 import { useSettings, type ApiProvider } from '../settings.js'
 import { askQuestion } from '../../components/tools/askUserState.js'
+import { runLocalTool } from '../tools/localTools.js'
 import { buildReasoningParam } from '../api/reasoning.js'
 import { appendBranch, getVisibleMessages, normalizeSession, selectVersion } from './branches.js'
 import * as db from './db.js'
@@ -1256,6 +1258,14 @@ const streamReply = async (sessionId: string, initial: AssistantMessage, request
                 images: await collectImages(prepared, controller.signal),
                 // 开启思考给预算；关闭设 0 让模型不思考
                 thinking: { thinkingBudget: initial.thinking ? GEMINI_THINKING_BUDGET : 0 },
+                // 本地工具：时间、计算器、询问用户、位置
+                runTool: (name, input) =>
+                  runLocalTool(
+                    name,
+                    input,
+                    { askUser: (question, options) => askQuestion(question, options) },
+                    controller.signal
+                  ),
                 signal: controller.signal,
               })
             : settings.provider === 'claude'
@@ -1268,6 +1278,14 @@ const streamReply = async (sessionId: string, initial: AssistantMessage, request
                   images: await collectImages(prepared, controller.signal),
                   maxTokens: CLAUDE_MAX_TOKENS,
                   thinkingBudget: initial.thinking ? CLAUDE_THINKING_BUDGET : undefined,
+                  // 本地工具：时间、计算器、询问用户、位置
+                  runTool: (name, input) =>
+                    runLocalTool(
+                      name,
+                      input,
+                      { askUser: (question, options) => askQuestion(question, options) },
+                      controller.signal
+                    ),
                   signal: controller.signal,
                 })
               : null
@@ -1311,7 +1329,7 @@ const streamReply = async (sessionId: string, initial: AssistantMessage, request
                     signal: controller.signal,
                   })
                 )
-            : streamMessage(
+            : streamOfficialWithTools(
                 settings.apiKey ?? '',
                 {
                   model: resolveModel(initial.model, settings) as ChatModel,
@@ -1322,6 +1340,14 @@ const streamReply = async (sessionId: string, initial: AssistantMessage, request
                   tools: serverTools(initial.search ?? false),
                   ...(titleRequests.has(controller) ? { title: { enabled: true } } : {}),
                 },
+                // 本地工具：时间、计算器、询问用户、位置
+                (name: string, input: Record<string, unknown>) =>
+                  runLocalTool(
+                    name,
+                    input,
+                    { askUser: (question, options) => askQuestion(question, options) },
+                    controller.signal
+                  ),
                 controller.signal
               )
         const blockIndexes = new Map<number, number>()
