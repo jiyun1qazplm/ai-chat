@@ -21,8 +21,14 @@ import {
   prepareDraftMessage,
 } from './drafts.js'
 import { createLatestReminder } from './latestReminder.js'
-import { memoryPrompt, addMemory, tickMemoryTurn, resetMemoryTurns } from '../memory.js'
-import { extractMemories } from '../memoryExtract.js'
+import {
+  memoryPrompt,
+  useMemory,
+  applyConsolidated,
+  tickMemoryTurn,
+  finishMemoryTurn,
+} from '../memory.js'
+import { updateMemories } from '../memoryExtract.js'
 import {
   applyEvent,
   canContinueReply,
@@ -623,41 +629,62 @@ export const setSessionModel = (sessionId: string, model: string) => {
  * 提交指定会话的最新草稿；null 表示新建会话。
  * 同步接收成功才清空草稿，附件原件由会话接管；保存失败仍通过保存入口重试。
  */
-/**
- * 从会话当前路径提取记忆。
- * 失败时静默忽略：这是后台附加动作，不该打扰用户或影响对话。
- */
-export const extractMemoriesFromSession = async (
-  sessionId: string,
-  signal = new AbortController().signal
-): Promise<string[]> => {
+/** 取最近若干条消息作为记忆更新的素材 */
+const recentTranscript = (sessionId: string, limit = 14) => {
   const session = getSession(sessionId)
   if (!session) {
     return []
   }
-  const transcript = getVisibleMessages(session)
-    .slice(-12)
+  return getVisibleMessages(session)
+    .slice(-limit)
     .map((message) => ({
       role: message.role,
       content: message.role === 'assistant' ? getReplyText(message) : message.content,
     }))
     .filter((message) => message.content.trim())
+}
+
+/** 记忆更新的结果统计 */
+export type MemoryUpdateResult = { added: number; removed: number; changed: number } | null
+
+/**
+ * 让模型管理长期记忆：传入当前列表与本轮对话，模型自行决定增删改。
+ * 到点触发时一定会执行；模型可以原样返回表示不改动。
+ */
+export const updateMemoriesFromSession = async (
+  sessionId: string,
+  signal = new AbortController().signal
+): Promise<MemoryUpdateResult> => {
+  const transcript = recentTranscript(sessionId)
   if (transcript.length === 0) {
-    return []
+    return null
   }
+  const before = useMemory.getState().items
   try {
-    const candidates = await extractMemories(transcript, signal)
-    // 提取过就重新开始计数，避免紧接着又触发一次
-    resetMemoryTurns()
-    const added: string[] = []
-    for (const item of candidates) {
-      if (addMemory(item.text, 'auto', item.kind)) {
-        added.push(item.text)
-      }
+    const next = await updateMemories(
+      before.map((item) => ({ text: item.text, kind: item.kind })),
+      transcript,
+      signal,
+      useMemory.getState().memoryModel
+    )
+    // 模型返回空列表时视为「无内容可保留」，但拒绝把已有记忆清空
+    if (next.length === 0) {
+      return null
     }
-    return added
+    const beforeTexts = new Set(before.map((item) => item.text))
+    const nextTexts = new Set(next.map((item) => item.text))
+    const added = next.filter((item) => !beforeTexts.has(item.text)).length
+    const removed = before.filter((item) => !nextTexts.has(item.text)).length
+    // 文本没变但类别变了的算修改
+    const changed =
+      next.filter((item) => {
+        const matched = before.find((old) => old.text === item.text)
+        return matched && matched.kind !== item.kind
+      }).length + 0
+    applyConsolidated(next)
+    return { added, removed, changed }
   } catch {
-    return []
+    return null
   }
 }
 
@@ -1329,9 +1356,12 @@ const streamReply = async (sessionId: string, initial: AssistantMessage, request
           }
         }
         reply = settleReply(reply, 'done', Date.now())
-        // 自动记忆按用户设定的轮数触发：数到第 N 轮才提取一次
+        // 自动记忆到点必触发：模型可以原样返回表示不改动
         if (tickMemoryTurn()) {
-          void extractMemoriesFromSession(sessionId)
+          void updateMemoriesFromSession(sessionId).then((result) => {
+            // 成功（含「无改动」）才重新计数，失败留给下一轮重试
+            finishMemoryTurn(result !== null || useMemory.getState().items.length === 0)
+          })
         }
         // 兼容接口没有标题生成能力，用提问的前半句作为会话标题
         if (compatible && titleRequests.has(controller) && !controller.signal.aborted) {
