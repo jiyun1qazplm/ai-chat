@@ -261,39 +261,103 @@ const evaluateExpression = (input: string): number => {
 }
 
 /** 读取一次位置；用户拒绝或超时都返回可读的原因，交给模型解释 */
+/**
+ * 位置跟踪：
+ * 首次调用时开始监听位置变化（watchPosition），之后每次调用直接取最新一次结果。
+ * 一旦开始跟踪就持续更新，直到页面关闭或用户撤销权限；这样模型多次询问位置时，
+ * 拿到的都是当前位置，而不是第一次读到的旧坐标。
+ */
+type LocationState = {
+  latest: { latitude: number; longitude: number; accuracy: number; at: number } | null
+  error: string | null
+  watchId: number | null
+}
+
+const locationState: LocationState = { latest: null, error: null, watchId: null }
+/** 等待首个定位结果的回调；拿到结果后统一通知 */
+let locationWaiters: ((value: string) => void)[] = []
+
+const formatLocation = (value: NonNullable<LocationState['latest']>): string =>
+  [
+    `纬度：${value.latitude.toFixed(6)}`,
+    `经度：${value.longitude.toFixed(6)}`,
+    `精度：约 ${Math.round(value.accuracy)} 米`,
+    `更新时间：${new Date(value.at).toLocaleTimeString()}`,
+    '坐标系：WGS84（浏览器定位原始数据）',
+  ].join('\n')
+
+const flushLocationWaiters = (text: string) => {
+  const waiters = locationWaiters
+  locationWaiters = []
+  for (const resolve of waiters) {
+    resolve(text)
+  }
+}
+
+/** 开始（或在失败后重试）位置监听 */
+const startLocationWatch = () => {
+  if (locationState.watchId !== null) {
+    return
+  }
+  if (typeof navigator === 'undefined' || !navigator.geolocation) {
+    locationState.error = '当前环境不支持定位。'
+    return
+  }
+  locationState.error = null
+  locationState.watchId = navigator.geolocation.watchPosition(
+    (position) => {
+      locationState.latest = {
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+        accuracy: position.coords.accuracy,
+        at: Date.now(),
+      }
+      locationState.error = null
+      flushLocationWaiters(formatLocation(locationState.latest))
+    },
+    (error) => {
+      const reason =
+        error.code === error.PERMISSION_DENIED
+          ? '用户拒绝了定位权限。'
+          : error.code === error.POSITION_UNAVAILABLE
+            ? '定位信息不可用。'
+            : '定位超时。'
+      locationState.error = reason
+      // 权限被拒绝后停止监听，避免反复请求
+      if (error.code === error.PERMISSION_DENIED && locationState.watchId !== null) {
+        navigator.geolocation.clearWatch(locationState.watchId)
+        locationState.watchId = null
+      }
+      flushLocationWaiters(reason)
+    },
+    { timeout: 15000, maximumAge: 30000, enableHighAccuracy: false }
+  )
+}
+
+/** 取位置：有最新结果立即返回，否则等待第一次定位 */
 const readLocation = (signal: AbortSignal): Promise<string> =>
   new Promise((resolve) => {
-    if (typeof navigator === 'undefined' || !navigator.geolocation) {
-      resolve('当前环境不支持定位。')
+    startLocationWatch()
+    if (locationState.latest) {
+      resolve(formatLocation(locationState.latest))
       return
     }
-    const onAbort = () => resolve('用户停止了生成，定位已取消。')
+    if (locationState.error) {
+      // 出错后允许下次调用重新尝试
+      const message = locationState.error
+      locationState.error = null
+      startLocationWatch()
+      if (locationState.watchId === null) {
+        resolve(message)
+        return
+      }
+    }
+    const onAbort = () => resolve('用户停止了生成，本次没有取到位置。')
     signal.addEventListener('abort', onAbort, { once: true })
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        signal.removeEventListener('abort', onAbort)
-        const { latitude, longitude, accuracy } = position.coords
-        resolve(
-          [
-            `纬度：${latitude.toFixed(6)}`,
-            `经度：${longitude.toFixed(6)}`,
-            `精度：约 ${Math.round(accuracy)} 米`,
-            '坐标系：WGS84（浏览器定位原始数据）',
-          ].join('\n')
-        )
-      },
-      (error) => {
-        signal.removeEventListener('abort', onAbort)
-        const reason =
-          error.code === error.PERMISSION_DENIED
-            ? '用户拒绝了定位权限。'
-            : error.code === error.POSITION_UNAVAILABLE
-              ? '定位信息不可用。'
-              : '定位超时。'
-        resolve(reason)
-      },
-      { timeout: 15000, maximumAge: 60000, enableHighAccuracy: false }
-    )
+    locationWaiters.push((text) => {
+      signal.removeEventListener('abort', onAbort)
+      resolve(text)
+    })
   })
 
 /** 执行一个本地工具调用，返回要回传给模型的文本 */
