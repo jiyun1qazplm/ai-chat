@@ -568,6 +568,24 @@ export const removeSession = (id: string): Promise<boolean> => {
   return task
 }
 
+/**
+ * 批量删除会话：逐个执行，返回成功删除的数量。
+ * 单个失败不影响其他会话，失败的原因由调用方提示。
+ */
+export const removeSessions = async (ids: string[]): Promise<number> => {
+  let removed = 0
+  for (const id of ids) {
+    try {
+      if (await removeSession(id)) {
+        removed += 1
+      }
+    } catch {
+      // 单个失败继续处理下一个
+    }
+  }
+  return removed
+}
+
 const removeSessionData = async (id: string): Promise<boolean> => {
   if (get().importingHistory || deletingSessions.has(id)) {
     return false
@@ -1294,41 +1312,41 @@ const streamReply = async (sessionId: string, initial: AssistantMessage, request
           : compatible
             ? toMessageStreamEvents(
                 runOpenAIAgent({
-                    baseUrl: settings.openaiBaseUrl,
-                    apiKey: settings.openaiApiKey ?? '',
-                    model: resolveModel(initial.model, settings, sessionModel),
-                    reasoningParam: buildReasoningParam(
-                      resolveModel(initial.model, settings, sessionModel),
-                      initial.thinking ?? false,
-                      settings.reasoningMode,
-                      settings.reasoningOnMode
-                    ),
-                    system: composeSystem(prepared.systemPrompt),
-                    messages,
-                    images: await collectImages(prepared, controller.signal),
-                    // 只有开了搜索且配了 Key 才提供联网工具
-                    search: useSearch
-                      ? async (query, searchSignal) => {
-                          const { results, answer } = await searchWithTavily(
-                            tavilyKey ?? '',
-                            query,
-                            searchSignal,
-                            {
-                              maxResults: settings.tavilyMaxResults,
-                              searchDepth: settings.tavilySearchDepth,
-                              includeAnswer: settings.tavilyIncludeAnswer,
-                            }
-                          )
-                          return { results, text: formatSearchResults(query, results, answer) }
-                        }
-                      : undefined,
-                    // 本地工具：时间、计算器、询问用户、位置
-                    localTools: {
-                      askUser: (question, options) => askQuestion(question, options),
-                    },
-                    signal: controller.signal,
-                  })
-                )
+                  baseUrl: settings.openaiBaseUrl,
+                  apiKey: settings.openaiApiKey ?? '',
+                  model: resolveModel(initial.model, settings, sessionModel),
+                  reasoningParam: buildReasoningParam(
+                    resolveModel(initial.model, settings, sessionModel),
+                    initial.thinking ?? false,
+                    settings.reasoningMode,
+                    settings.reasoningOnMode
+                  ),
+                  system: composeSystem(prepared.systemPrompt),
+                  messages,
+                  images: await collectImages(prepared, controller.signal),
+                  // 只有开了搜索且配了 Key 才提供联网工具
+                  search: useSearch
+                    ? async (query, searchSignal) => {
+                        const { results, answer } = await searchWithTavily(
+                          tavilyKey ?? '',
+                          query,
+                          searchSignal,
+                          {
+                            maxResults: settings.tavilyMaxResults,
+                            searchDepth: settings.tavilySearchDepth,
+                            includeAnswer: settings.tavilyIncludeAnswer,
+                          }
+                        )
+                        return { results, text: formatSearchResults(query, results, answer) }
+                      }
+                    : undefined,
+                  // 本地工具：时间、计算器、询问用户、位置
+                  localTools: {
+                    askUser: (question, options) => askQuestion(question, options),
+                  },
+                  signal: controller.signal,
+                })
+              )
             : streamOfficialWithTools(
                 settings.apiKey ?? '',
                 {
