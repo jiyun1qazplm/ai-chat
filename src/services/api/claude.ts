@@ -243,8 +243,11 @@ async function* streamClaudeOnce({
         yield payload as MessageStreamEvent
         break
       case 'content_block_start': {
-        const block = (payload as { content_block?: { type?: string; id?: string; name?: string; input?: unknown } })
-          .content_block
+        const block = (
+          payload as {
+            content_block?: { type?: string; id?: string; name?: string; input?: unknown }
+          }
+        ).content_block
         if (block?.type === 'tool_use' && block.name) {
           // 本地工具调用：交给外层执行，不作为可见块产出
           onToolUse?.(block.id ?? '', block.name, block.input ?? {})
