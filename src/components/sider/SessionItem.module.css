@@ -84,3 +84,32 @@
     font-size: 16px;
   }
 }
+
+/* 进入多选后，把右侧菜单换成勾选框 */
+.check {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 20px;
+  height: 20px;
+  margin-right: 8px;
+  border: 1.5px solid var(--dsw-alias-border-l3);
+  border-radius: 50%;
+  color: var(--dsw-static-neutral-bluish-00);
+}
+
+.checkOn {
+  border-color: var(--dsw-alias-brand-primary);
+  background-color: var(--dsw-alias-brand-primary);
+}
+
+/* 选中态：轻底色 + 主色描边感 */
+.selecting {
+  cursor: pointer;
+}
+
+.selected {
+  background-color: var(--dsw-alias-interactive-bg-hover-accent);
+}
