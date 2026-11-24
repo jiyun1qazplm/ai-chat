@@ -352,7 +352,10 @@ async function* streamGeminiOnce({
   }
   yield {
     type: 'message_delta',
-    delta: { stop_reason: sawFunctionCall ? 'tool_use' : toStopReason(finishReason), stop_sequence: null },
+    delta: {
+      stop_reason: sawFunctionCall ? 'tool_use' : toStopReason(finishReason),
+      stop_sequence: null,
+    },
     ...(usage ? { usage } : {}),
   }
   yield { type: 'message_stop' }
