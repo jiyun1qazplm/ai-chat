@@ -214,6 +214,10 @@ export const en = {
   tavilyVerificationFailed: 'Verification failed: {message}',
   modelSelect: 'Model',
   modelListLoading: 'Fetching model list',
+  askUserTitle: 'Question from the model',
+  askUserPlaceholder: 'Type your answer…',
+  askUserSubmit: 'Send answer',
+  askUserSkip: 'Skip',
   settingsAccentColor: 'Accent color',
   settingsBubbleFollowAccent: 'Chat bubbles follow accent',
   settingsBubbleFollowAccentDesc:
