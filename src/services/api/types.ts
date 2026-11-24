@@ -149,6 +149,8 @@ export type WebFetchToolResultBlockParam = WebFetchToolResultBlock
 export type AssistantBlockParam =
   | TextBlockParam
   | ThinkingBlock
+  /** 客户端工具调用（本地工具），与 assistant 消息一起回传 */
+  | { type: 'tool_use'; id: string; name: string; input: unknown }
   | ServerToolUseBlockParam
   | WebSearchToolResultBlockParam
   | WebFetchToolResultBlockParam
