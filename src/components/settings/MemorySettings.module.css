@@ -194,3 +194,42 @@
   color: var(--dsw-alias-label-caption);
   font-size: 11px;
 }
+
+/* 记忆模型设置 */
+.currentModel {
+  max-width: 60%;
+  overflow: hidden;
+  color: var(--dsw-alias-label-secondary);
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.modelRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.modelInput {
+  flex: 1;
+  min-width: 0;
+  box-sizing: border-box;
+  height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 17px;
+  outline: none;
+  background: transparent;
+  color: var(--dsw-alias-label-primary);
+  font: inherit;
+  font-size: 13px;
+
+  &::placeholder {
+    color: var(--dsw-alias-label-caption);
+  }
+
+  &:focus {
+    border-color: var(--dsw-alias-brand-primary);
+  }
+}
