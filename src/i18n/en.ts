@@ -349,4 +349,12 @@ export const en = {
   memoryApply: 'Apply result',
   memoryKindFact: 'Fact',
   memoryKindPreference: 'Preference',
+  memoryNoChange: 'The model decided no changes were needed',
+  memoryUpdated: 'Updated: {added} added, {changed} changed, {removed} removed',
+  memoryModel: 'Memory model',
+  memoryModelFollow: 'Follow current model',
+  memoryModelPlaceholder: 'Leave empty to follow the current model, e.g. gpt-5-mini',
+  memoryModelClear: 'Use default',
+  memoryModelDescription:
+    'Model used for memory work, with the current provider ({provider}) endpoint and key. A cheap small model works well.',
 } satisfies Record<keyof typeof zh, string>
