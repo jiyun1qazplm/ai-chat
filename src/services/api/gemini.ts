@@ -9,6 +9,7 @@
  */
 
 import { ApiError, readErrorResponse } from './client.js'
+import { toGeminiFunctionDeclarations } from '../tools/localTools.js'
 import type {
   MessageParam,
   MessageStreamEvent,
@@ -36,7 +37,12 @@ export const normalizeGeminiBaseUrl = (input: string): string => {
 
 // ---------- 请求 ----------
 
-type GeminiPart = { text: string } | { inlineData: { mimeType: string; data: string } }
+type GeminiPart =
+  | { text: string }
+  | { inlineData: { mimeType: string; data: string } }
+  /** 工具往返：调用与结果 */
+  | { functionCall: { name: string; args: Record<string, unknown> } }
+  | { functionResponse: { name: string; response: { result: string } } }
 
 type GeminiContent = { role: 'user' | 'model'; parts: GeminiPart[] }
 
@@ -157,7 +163,13 @@ export const fetchGeminiModels = async (
 
 type GeminiChunk = {
   candidates?: {
-    content?: { parts?: { text?: string; thought?: boolean }[] }
+    content?: {
+      parts?: {
+        text?: string
+        thought?: boolean
+        functionCall?: { name?: string; args?: Record<string, unknown> }
+      }[]
+    }
     finishReason?: string
   }[]
   usageMetadata?: {
@@ -182,6 +194,20 @@ const toStopReason = (reason: string | undefined): StopReason => {
   }
 }
 
+/** 把一次工具往返翻译成 Gemini 的 model + user 两条内容 */
+export const toGeminiToolContents = (turn: {
+  calls: { name: string; args: Record<string, unknown> }[]
+  results: { name: string; text: string }[]
+}): GeminiContent[] => [
+  { role: 'model', parts: turn.calls.map((call) => ({ functionCall: call })) },
+  {
+    role: 'user',
+    parts: turn.results.map((result) => ({
+      functionResponse: { name: result.name, response: { result: result.text } },
+    })),
+  },
+]
+
 /** 思考配置：开启时给思考预算，关闭时设 0 */
 export type GeminiThinking = { thinkingBudget: number }
 
@@ -189,24 +215,29 @@ export type GeminiThinking = { thinkingBudget: number }
  * POST {base}/models/{model}:streamGenerateContent?alt=sse，翻译成内部事件。
  * Gemini 分片里是完整文本而非增量，这里通过比较长度产出增量。
  */
-export async function* streamGeminiMessage({
+/** 单轮请求：发一次 streamGenerateContent 并翻译事件 */
+async function* streamGeminiOnce({
   baseUrl,
   apiKey,
   model,
   system,
-  messages,
-  images,
+  contents,
   thinking,
+  tools,
   signal,
+  onToolCall,
 }: {
   baseUrl: string
   apiKey: string
   model: string
   system: string
-  messages: MessageParam[]
-  images: ImageDataUrls
+  contents: GeminiContent[]
   thinking?: GeminiThinking
+  /** 函数声明：传入后启用工具调用 */
+  tools?: unknown[]
   signal: AbortSignal
+  /** 收集本轮的函数调用，供外层执行 */
+  onToolCall?: (name: string, args: Record<string, unknown>) => void
 }): AsyncGenerator<MessageStreamEvent> {
   const name = model.replace(/^models\//, '')
   const url =
@@ -214,11 +245,12 @@ export async function* streamGeminiMessage({
     `?alt=sse&key=${encodeURIComponent(apiKey)}`
 
   const body: Record<string, unknown> = {
-    contents: toGeminiContents(messages, images),
+    contents,
     ...(system ? { systemInstruction: { parts: [{ text: system }] } } : {}),
     ...(thinking
       ? { generationConfig: { thinkingConfig: { thinkingBudget: thinking.thinkingBudget } } }
       : {}),
+    ...(tools && tools.length > 0 ? { tools: [{ functionDeclarations: tools }] } : {}),
   }
 
   let response: Response
@@ -248,6 +280,7 @@ export async function* streamGeminiMessage({
   let openIndex: number | null = null
   let finishReason: string | undefined
   let usage: MessageUsage | undefined
+  let sawFunctionCall = false
 
   yield { type: 'message_start', message: { id: '', model: name } }
 
@@ -276,9 +309,22 @@ export async function* streamGeminiMessage({
     if (candidate.finishReason) {
       finishReason = candidate.finishReason
     }
+    // 出现了函数调用：本轮不能当作文本回答收尾，交给上层执行工具后继续
+    if (candidate.content?.parts?.some((part) => part.functionCall?.name)) {
+      sawFunctionCall = true
+    }
     for (const part of candidate.content?.parts ?? []) {
       // thought 为 true 的是思考内容，单独成块
       if (part.thought) {
+        continue
+      }
+      // 函数调用：交给外层记录后本地执行，不在正文里产出可见块
+      if (part.functionCall?.name) {
+        if (openIndex !== null) {
+          yield { type: 'content_block_stop', index: openIndex }
+          openIndex = null
+        }
+        onToolCall?.(part.functionCall.name, part.functionCall.args ?? {})
         continue
       }
       const text = part.text ?? ''
@@ -306,8 +352,75 @@ export async function* streamGeminiMessage({
   }
   yield {
     type: 'message_delta',
-    delta: { stop_reason: toStopReason(finishReason), stop_sequence: null },
+    delta: { stop_reason: sawFunctionCall ? 'tool_use' : toStopReason(finishReason), stop_sequence: null },
     ...(usage ? { usage } : {}),
   }
   yield { type: 'message_stop' }
+}
+
+/** 最多连续几轮工具调用 */
+const MAX_TOOL_ROUNDS = 4
+
+/**
+ * 对外入口：Gemini 对话（可选本地工具）。
+ *
+ * 一轮结束后若模型发起了函数调用，就在本地执行，
+ * 把 functionCall 与 functionResponse 追加进 contents 再请求下一轮，
+ * 正文逐轮增量产出，界面上是连续的一段回答。
+ */
+export async function* streamGeminiMessage({
+  baseUrl,
+  apiKey,
+  model,
+  system,
+  messages,
+  images,
+  thinking,
+  runTool,
+  signal,
+}: {
+  baseUrl: string
+  apiKey: string
+  model: string
+  system: string
+  messages: MessageParam[]
+  images: ImageDataUrls
+  thinking?: GeminiThinking
+  /** 本地工具执行器；不传则工具不参与对话 */
+  runTool?: (name: string, args: Record<string, unknown>) => Promise<string>
+  signal: AbortSignal
+}): AsyncGenerator<MessageStreamEvent> {
+  const contents = toGeminiContents(messages, images)
+  const tools = runTool ? toGeminiFunctionDeclarations() : undefined
+
+  for (let round = 0; ; round += 1) {
+    const calls: { name: string; args: Record<string, unknown> }[] = []
+    yield* streamGeminiOnce({
+      baseUrl,
+      apiKey,
+      model,
+      system,
+      contents,
+      thinking,
+      tools,
+      signal,
+      onToolCall: (name, args) => calls.push({ name, args }),
+    })
+
+    if (!runTool || calls.length === 0 || round >= MAX_TOOL_ROUNDS || signal.aborted) {
+      return
+    }
+
+    // 模型发起调用 → 本地执行 → 结果作为 functionResponse 回传
+    contents.push({
+      role: 'model',
+      parts: calls.map((call) => ({ functionCall: call })),
+    })
+    const responses: GeminiPart[] = []
+    for (const call of calls) {
+      const text = await runTool(call.name, call.args)
+      responses.push({ functionResponse: { name: call.name, response: { result: text } } })
+    }
+    contents.push({ role: 'user', parts: responses })
+  }
 }
