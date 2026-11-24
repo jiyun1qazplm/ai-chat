@@ -17,11 +17,7 @@ import {
 } from './openai.js'
 import type { ImageDataUrls } from './openai.js'
 import type { MessageParam, MessageStreamEvent, WebSearchResult } from './types.js'
-import {
-  getEnabledToolDefs,
-  runLocalTool,
-  type LocalToolHandlers,
-} from '../tools/localTools.js'
+import { getEnabledToolDefs, runLocalTool, type LocalToolHandlers } from '../tools/localTools.js'
 
 /** 最多允许模型连续发起几轮工具调用，避免死循环 */
 const MAX_TOOL_ROUNDS = 3
@@ -217,10 +213,7 @@ export async function* runOpenAIAgent({
   }
 
   // 搜索工具与本地工具同时声明，由模型自行决定调用哪个
-  const tools = [
-    ...(search ? SEARCH_TOOLS : []),
-    ...(localTools ? getEnabledToolDefs() : []),
-  ]
+  const tools = [...(search ? SEARCH_TOOLS : []), ...(localTools ? getEnabledToolDefs() : [])]
 
   for (let round = 0; round < MAX_TOOL_ROUNDS; round += 1) {
     const result = yield* drain(
