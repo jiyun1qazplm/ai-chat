@@ -8,6 +8,7 @@
  */
 
 import { ApiError, readErrorResponse } from './client.js'
+import { toClaudeTools } from '../tools/localTools.js'
 import { readServerSentEvents } from './sse.js'
 import type { MessageParam, MessageStreamEvent, TextBlockParam } from './types.js'
 
@@ -160,38 +161,41 @@ export const fetchClaudeModels = async (
  * POST {base}/messages（stream: true）。
  * Claude 的事件本来就接近内部格式，主要做类型收敛与错误处理。
  */
-export async function* streamClaudeMessage({
+async function* streamClaudeOnce({
   baseUrl,
   apiKey,
   model,
   system,
-  messages,
-  images,
+  claudeMessages,
   maxTokens,
   thinkingBudget,
+  tools,
+  onToolUse,
   signal,
 }: {
   baseUrl: string
   apiKey: string
   model: string
   system: string
-  messages: MessageParam[]
-  images: ImageDataUrls
+  claudeMessages: unknown[]
   /** Claude 必填 max_tokens */
   maxTokens: number
   /** 开启思考时的预算 token 数；0 或未给则关闭 */
   thinkingBudget?: number
+  tools?: unknown[]
+  onToolUse?: (id: string, name: string, input: unknown) => void
   signal: AbortSignal
 }): AsyncGenerator<MessageStreamEvent> {
   const body: Record<string, unknown> = {
     model,
     max_tokens: maxTokens,
     stream: true,
-    messages: toClaudeMessages(messages, images),
+    messages: claudeMessages,
     ...(system ? { system } : {}),
     ...(thinkingBudget && thinkingBudget > 0
       ? { thinking: { type: 'enabled', budget_tokens: thinkingBudget } }
       : {}),
+    ...(tools && tools.length > 0 ? { tools } : {}),
   }
 
   let response: Response
@@ -233,12 +237,22 @@ export async function* streamClaudeMessage({
     const type = typed?.type ?? eventName
     switch (type) {
       case 'message_start':
-      case 'content_block_start':
       case 'content_block_delta':
       case 'content_block_stop':
       case 'message_delta':
         yield payload as MessageStreamEvent
         break
+      case 'content_block_start': {
+        const block = (payload as { content_block?: { type?: string; id?: string; name?: string; input?: unknown } })
+          .content_block
+        if (block?.type === 'tool_use' && block.name) {
+          // 本地工具调用：交给外层执行，不作为可见块产出
+          onToolUse?.(block.id ?? '', block.name, block.input ?? {})
+          break
+        }
+        yield payload as MessageStreamEvent
+        break
+      }
       case 'message_stop':
         yield { type: 'message_stop' }
         return
@@ -247,4 +261,82 @@ export async function* streamClaudeMessage({
     }
   }
   throw new ApiError('interrupted', '')
+}
+
+/** 最多连续几轮工具调用 */
+const MAX_TOOL_ROUNDS = 4
+
+/**
+ * 对外入口：Claude 对话（可选本地工具）。
+ *
+ * 一轮结束后若有 tool_use，就在本地执行，
+ * 以 assistant(tool_use) + user(tool_result) 的形式追加进历史再请求；
+ * 正文与思考逐轮增量产出。
+ */
+export async function* streamClaudeMessage({
+  baseUrl,
+  apiKey,
+  model,
+  system,
+  messages,
+  images,
+  maxTokens,
+  thinkingBudget,
+  runTool,
+  signal,
+}: {
+  baseUrl: string
+  apiKey: string
+  model: string
+  system: string
+  messages: MessageParam[]
+  images: ImageDataUrls
+  /** Claude 必填 max_tokens */
+  maxTokens: number
+  /** 开启思考时的预算 token 数；0 或未给则关闭 */
+  thinkingBudget?: number
+  /** 本地工具执行器；不传则工具不参与对话 */
+  runTool?: (name: string, args: Record<string, unknown>) => Promise<string>
+  signal: AbortSignal
+}): AsyncGenerator<MessageStreamEvent> {
+  const history = toClaudeMessages(messages, images) as unknown[]
+  const tools = runTool ? toClaudeTools() : undefined
+
+  for (let round = 0; ; round += 1) {
+    const calls: { id: string; name: string; input: unknown }[] = []
+    yield* streamClaudeOnce({
+      baseUrl,
+      apiKey,
+      model,
+      system,
+      claudeMessages: history,
+      maxTokens,
+      thinkingBudget,
+      tools,
+      onToolUse: (id, name, input) => calls.push({ id, name, input }),
+      signal,
+    })
+
+    if (!runTool || calls.length === 0 || round >= MAX_TOOL_ROUNDS || signal.aborted) {
+      return
+    }
+
+    history.push({
+      role: 'assistant',
+      content: calls.map((call) => ({
+        type: 'tool_use',
+        id: call.id,
+        name: call.name,
+        input: call.input,
+      })),
+    })
+    const results: unknown[] = []
+    for (const call of calls) {
+      const input =
+        call.input && typeof call.input === 'object' ? (call.input as Record<string, unknown>) : {}
+      const text = await runTool(call.name, input)
+      results.push({ type: 'tool_result', tool_use_id: call.id, content: text })
+    }
+    history.push({ role: 'user', content: results })
+  }
 }
