@@ -18,7 +18,7 @@ import {
 import type { ImageDataUrls } from './openai.js'
 import type { MessageParam, MessageStreamEvent, WebSearchResult } from './types.js'
 import {
-  LOCAL_TOOL_DEFS,
+  getEnabledToolDefs,
   runLocalTool,
   type LocalToolHandlers,
 } from '../tools/localTools.js'
@@ -219,7 +219,7 @@ export async function* runOpenAIAgent({
   // 搜索工具与本地工具同时声明，由模型自行决定调用哪个
   const tools = [
     ...(search ? SEARCH_TOOLS : []),
-    ...(localTools ? LOCAL_TOOL_DEFS : []),
+    ...(localTools ? getEnabledToolDefs() : []),
   ]
 
   for (let round = 0; round < MAX_TOOL_ROUNDS; round += 1) {
