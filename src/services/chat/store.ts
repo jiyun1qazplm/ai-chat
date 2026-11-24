@@ -4,12 +4,13 @@ import { ApiError, streamMessage } from '../api/client.js'
 import { runOpenAIAgent, toMessageStreamEvents } from '../api/agent.js'
 import { DEFAULT_CLAUDE_BASE_URL, streamClaudeMessage } from '../api/claude.js'
 import { DEFAULT_GEMINI_BASE_URL, streamGeminiMessage } from '../api/gemini.js'
-import { streamOpenAIMessage, type ImageDataUrls } from '../api/openai.js'
+import { type ImageDataUrls } from '../api/openai.js'
 import { formatSearchResults, searchWithTavily } from '../api/tavily.js'
 import type { ChatModel, CreateMessageRequest } from '../api/types.js'
 import { extractFileIds, getFileErrorCode, isRetryableApiError } from '../api/errors.js'
 import { cancelUpload, describeUploadError, uploadAttachment, useUploads } from '../attachments.js'
 import { useSettings, type ApiProvider } from '../settings.js'
+import { askQuestion } from '../../components/tools/askUserState.js'
 import { buildReasoningParam } from '../api/reasoning.js'
 import { appendBranch, getVisibleMessages, normalizeSession, selectVersion } from './branches.js'
 import * as db from './db.js'
@@ -1273,9 +1274,8 @@ const streamReply = async (sessionId: string, initial: AssistantMessage, request
         const events = native
           ? native
           : compatible
-            ? useSearch
-              ? toMessageStreamEvents(
-                  runOpenAIAgent({
+            ? toMessageStreamEvents(
+                runOpenAIAgent({
                     baseUrl: settings.openaiBaseUrl,
                     apiKey: settings.openaiApiKey ?? '',
                     model: resolveModel(initial.model, settings, sessionModel),
@@ -1288,38 +1288,29 @@ const streamReply = async (sessionId: string, initial: AssistantMessage, request
                     system: composeSystem(prepared.systemPrompt),
                     messages,
                     images: await collectImages(prepared, controller.signal),
-                    search: async (query, searchSignal) => {
-                      const { results, answer } = await searchWithTavily(
-                        tavilyKey ?? '',
-                        query,
-                        searchSignal,
-                        {
-                          maxResults: settings.tavilyMaxResults,
-                          searchDepth: settings.tavilySearchDepth,
-                          includeAnswer: settings.tavilyIncludeAnswer,
+                    // 只有开了搜索且配了 Key 才提供联网工具
+                    search: useSearch
+                      ? async (query, searchSignal) => {
+                          const { results, answer } = await searchWithTavily(
+                            tavilyKey ?? '',
+                            query,
+                            searchSignal,
+                            {
+                              maxResults: settings.tavilyMaxResults,
+                              searchDepth: settings.tavilySearchDepth,
+                              includeAnswer: settings.tavilyIncludeAnswer,
+                            }
+                          )
+                          return { results, text: formatSearchResults(query, results, answer) }
                         }
-                      )
-                      return { results, text: formatSearchResults(query, results, answer) }
+                      : undefined,
+                    // 本地工具：时间、计算器、询问用户、位置
+                    localTools: {
+                      askUser: (question, options) => askQuestion(question, options),
                     },
                     signal: controller.signal,
                   })
                 )
-              : streamOpenAIMessage({
-                  baseUrl: settings.openaiBaseUrl,
-                  apiKey: settings.openaiApiKey ?? '',
-                  model: resolveModel(initial.model, settings, sessionModel),
-                  reasoningParam: buildReasoningParam(
-                    resolveModel(initial.model, settings, sessionModel),
-                    initial.thinking ?? false,
-                    settings.reasoningMode,
-                    settings.reasoningOnMode
-                  ),
-                  // 只用本对话填写的提示词；没填就不发 system
-                  system: composeSystem(prepared.systemPrompt),
-                  messages,
-                  images: await collectImages(prepared, controller.signal),
-                  signal: controller.signal,
-                })
             : streamMessage(
                 settings.apiKey ?? '',
                 {
