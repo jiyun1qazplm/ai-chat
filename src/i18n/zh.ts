@@ -330,4 +330,12 @@ export const zh = {
   memoryApply: '应用整理结果',
   memoryKindFact: '事实',
   memoryKindPreference: '偏好',
+  memoryNoChange: '模型判断本次无需改动',
+  memoryUpdated: '已更新：新增 {added} 条，修改 {changed} 条，删除 {removed} 条',
+  memoryModel: '记忆处理模型',
+  memoryModelFollow: '跟随当前模型',
+  memoryModelPlaceholder: '留空则跟随当前模型，例如 gpt-5-mini',
+  memoryModelClear: '恢复默认',
+  memoryModelDescription:
+    '处理记忆时使用该模型（沿用当前服务商「{provider}」的地址与 Key），适合用便宜的小模型',
 } as const
