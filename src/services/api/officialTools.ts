@@ -24,7 +24,11 @@ export async function* streamOfficialWithTools(
 
   for (let round = 0; ; round += 1) {
     const calls: { id: string; name: string; input: unknown }[] = []
-    const payload: CreateMessageRequest = { ...body, messages, tools: tools as CreateMessageRequest['tools'] }
+    const payload: CreateMessageRequest = {
+      ...body,
+      messages,
+      tools: tools as CreateMessageRequest['tools'],
+    }
     for await (const event of streamMessage(apiKey, payload, signal)) {
       if (event.type === 'content_block_start' && event.content_block.type === 'tool_use') {
         const block = event.content_block
@@ -65,11 +69,6 @@ export async function* streamOfficialWithTools(
 }
 
 /** 本应用实现的本地工具名 */
-const LOCAL_TOOL_NAMES = new Set([
-  'get_current_time',
-  'calculator',
-  'ask_user',
-  'get_location',
-])
+const LOCAL_TOOL_NAMES = new Set(['get_current_time', 'calculator', 'ask_user', 'get_location'])
 
 export const isLocalTool = (name: string): boolean => LOCAL_TOOL_NAMES.has(name)
