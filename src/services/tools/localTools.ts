@@ -5,6 +5,25 @@
  * 模型通过 OpenAI function calling 发起调用，由 agent 循环执行并把结果回传。
  */
 
+import { useSettings } from '../settings.js'
+
+/** 工具名 → 设置里的开关字段 */
+const TOOL_SETTING_KEYS = {
+  get_current_time: 'toolTime',
+  calculator: 'toolCalculator',
+  ask_user: 'toolAskUser',
+  get_location: 'toolLocation',
+} as const
+
+/** 按用户开关过滤：只保留已启用的工具定义 */
+export const getEnabledToolDefs = (): LocalToolDef[] => {
+  const state = useSettings.getState()
+  return LOCAL_TOOL_DEFS.filter((tool) => {
+    const key = TOOL_SETTING_KEYS[tool.function.name as keyof typeof TOOL_SETTING_KEYS]
+    return key ? state[key] : true
+  })
+}
+
 /** OpenAI function calling 的工具声明 */
 export type LocalToolDef = {
   type: 'function'
@@ -320,7 +339,7 @@ export const runLocalTool = async (
 
 /** Gemini 的函数声明格式 */
 export const toGeminiFunctionDeclarations = () =>
-  LOCAL_TOOL_DEFS.map((tool) => ({
+  getEnabledToolDefs().map((tool) => ({
     name: tool.function.name,
     description: tool.function.description,
     parameters: tool.function.parameters,
@@ -328,7 +347,7 @@ export const toGeminiFunctionDeclarations = () =>
 
 /** Anthropic / Claude 的工具格式 */
 export const toClaudeTools = () =>
-  LOCAL_TOOL_DEFS.map((tool) => ({
+  getEnabledToolDefs().map((tool) => ({
     name: tool.function.name,
     description: tool.function.description,
     input_schema: tool.function.parameters,
