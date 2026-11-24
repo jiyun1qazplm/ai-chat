@@ -6,6 +6,7 @@ import {
   removeMemory,
   setMemoryAutoExtract,
   setMemoryAutoEvery,
+  setMemoryModel,
   MEMORY_AUTO_RANGE,
   applyConsolidated,
   memoryTexts,
@@ -14,8 +15,9 @@ import {
   useMemory,
 } from '../../services/memory.js'
 import { consolidateMemories } from '../../services/memoryExtract.js'
-import { extractMemoriesFromSession } from '../../services/chat/store.js'
+import { updateMemoriesFromSession } from '../../services/chat/store.js'
 import { useChatStore } from '../../services/chat/store.js'
+import { useSettings } from '../../services/settings.js'
 import { Button } from '../base/Button.js'
 import { Select } from '../base/Select.js'
 import { showToast } from '../base/toastState.js'
@@ -36,6 +38,10 @@ export const MemorySettings = () => {
   const autoExtract = useMemory((state) => state.autoExtract)
   const autoEvery = useMemory((state) => state.autoExtractEvery)
   const turns = useMemory((state) => state.turnsSinceExtract)
+  const memoryModel = useMemory((state) => state.memoryModel)
+  const [modelDraft, setModelDraft] = useState(memoryModel)
+  const openaiModel = useSettings((state) => state.openaiModel)
+  const provider = useSettings((state) => state.provider)
   const [draft, setDraft] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editText, setEditText] = useState('')
@@ -107,13 +113,23 @@ export const MemorySettings = () => {
                 return
               }
               setExtracting(true)
-              const added = await extractMemoriesFromSession(activeId)
+              const result = await updateMemoriesFromSession(activeId)
               setExtracting(false)
-              showToast(
-                added.length > 0
-                  ? { key: 'memoryExtracted', params: { count: added.length } }
-                  : { key: 'memoryNothingFound' }
-              )
+              // 模型可能新增、修改或删除，统计后一起提示
+              if (!result) {
+                showToast({ key: 'memoryNothingFound' })
+              } else if (result.added + result.removed + result.changed === 0) {
+                showToast({ key: 'memoryNoChange' })
+              } else {
+                showToast({
+                  key: 'memoryUpdated',
+                  params: {
+                    added: result.added,
+                    removed: result.removed,
+                    changed: result.changed,
+                  },
+                })
+              }
             }}
           >
             {t(extracting ? 'memoryExtracting' : 'memoryExtractNow')}
@@ -293,6 +309,43 @@ export const MemorySettings = () => {
               {t('memoryClearAll')}
             </Button>
           ) : null}
+
+          <div className={styles.row}>
+            <span className={styles.rowLabel}>{t('memoryModel')}</span>
+            <span className={styles.currentModel}>
+              {memoryModel || openaiModel || t('memoryModelFollow')}
+            </span>
+          </div>
+          <div className={styles.modelRow}>
+            <input
+              className={styles.modelInput}
+              type="text"
+              autoComplete="off"
+              spellCheck={false}
+              placeholder={t('memoryModelPlaceholder')}
+              value={modelDraft}
+              onChange={(event) => setModelDraft(event.target.value)}
+              onBlur={() => setMemoryModel(modelDraft)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' && !event.nativeEvent.isComposing) {
+                  setMemoryModel(modelDraft)
+                }
+              }}
+            />
+            {modelDraft ? (
+              <button
+                type="button"
+                className={styles.link}
+                onClick={() => {
+                  setModelDraft('')
+                  setMemoryModel('')
+                }}
+              >
+                {t('memoryModelClear')}
+              </button>
+            ) : null}
+          </div>
+          <div className={styles.description}>{t('memoryModelDescription', { provider })}</div>
 
           <div className={styles.row}>
             <span className={styles.rowLabel}>{t('memoryAutoExtract')}</span>
