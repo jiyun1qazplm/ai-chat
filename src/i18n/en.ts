@@ -220,7 +220,8 @@ export const en = {
   askUserSkip: 'Skip',
   settingDialogAsideToolsOptionLabel: 'AI tools',
   toolsSectionTitle: 'AI tools',
-  toolsSectionDesc: 'Enabled {count}/{total}. When off, the model never receives that tool and cannot call it.',
+  toolsSectionDesc:
+    'Enabled {count}/{total}. When off, the model never receives that tool and cannot call it.',
   toolTimeName: 'Time',
   toolTimeDesc: 'Read the device date, weekday, time, time zone and UTC offset.',
   toolCalculatorName: 'Calculator',
@@ -373,4 +374,16 @@ export const en = {
   memoryModelClear: 'Use default',
   memoryModelDescription:
     'Model used for memory work, with the current provider ({provider}) endpoint and key. A cheap small model works well.',
+  selectionEnter: 'Select',
+  selectionCancel: 'Cancel',
+  selectionCount: '{count} selected',
+  selectionAll: 'Select all',
+  selectionNone: 'Clear',
+  selectionDelete: 'Delete {count}',
+  selectionDeleting: 'Deleting...',
+  selectionDeleteTitle: 'Delete selected chats',
+  selectionDeleteDescription:
+    'Delete {count} selected chats? Their attachments will be removed too. This cannot be undone.',
+  selectionDeleted: 'Deleted {count} chats',
+  selectionDeletePartial: 'Deleted {removed} of {total} chats',
 } satisfies Record<keyof typeof zh, string>
