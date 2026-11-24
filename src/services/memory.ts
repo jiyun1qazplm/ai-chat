@@ -41,6 +41,8 @@ type MemoryState = {
   autoExtractEvery: number
   /** 距离上次自动提取已经过去的轮数（用于计数触发） */
   turnsSinceExtract: number
+  /** 处理记忆用的模型名；空串表示跟随当前服务商的模型 */
+  memoryModel: string
 }
 
 /** 自动提取间隔限制在 1-20 轮，默认 10 */
@@ -65,6 +67,7 @@ const KEYS = {
   autoExtract: 'chat-demo:memory-auto',
   autoExtractEvery: 'chat-demo:memory-auto-every',
   turns: 'chat-demo:memory-turns',
+  memoryModel: 'chat-demo:memory-model',
 } as const
 
 const read = (key: string) => {
@@ -126,6 +129,7 @@ export const useMemory = create<MemoryState>(() => ({
   autoExtract: read(KEYS.autoExtract) === 'true',
   autoExtractEvery: initialAutoEvery(),
   turnsSinceExtract: Number(read(KEYS.turns)) || 0,
+  memoryModel: read(KEYS.memoryModel) ?? '',
 }))
 
 const persist = (items: MemoryItem[]) => write(KEYS.items, JSON.stringify(items))
@@ -199,17 +203,28 @@ export const setMemoryAutoEvery = (every: number) => {
 export const MEMORY_AUTO_RANGE = { min: AUTO_EVERY_MIN, max: AUTO_EVERY_MAX }
 
 /**
- * 记一轮对话。返回 true 表示已达到间隔、该触发提取，并把计数归零。
- * 关闭自动提取时只累加不触发，用户重新开启后从当前计数继续。
+ * 记一轮对话。返回 true 表示已达到间隔、该触发一次记忆更新。
+ * 到点后计数先不清零，等更新成功再重置；失败时下一轮会继续尝试。
  */
 export const tickMemoryTurn = (): boolean => {
   const state = useMemory.getState()
   const next = state.turnsSinceExtract + 1
-  const reached = state.enabled && state.autoExtract && next >= state.autoExtractEvery
-  const value = reached ? 0 : next
-  write(KEYS.turns, String(value))
-  useMemory.setState({ turnsSinceExtract: value })
-  return reached
+  write(KEYS.turns, String(next))
+  useMemory.setState({ turnsSinceExtract: next })
+  return state.enabled && state.autoExtract && next >= state.autoExtractEvery
+}
+
+/** 更新结束后调用：成功则清零重新计数，失败保留计数以便下一轮重试 */
+export const finishMemoryTurn = (success: boolean) => {
+  if (!success) {
+    return
+  }
+  resetMemoryTurns()
+}
+
+export const setMemoryModel = (memoryModel: string) => {
+  write(KEYS.memoryModel, memoryModel.trim())
+  useMemory.setState({ memoryModel: memoryModel.trim() })
 }
 
 /** 重置计数：手动提取或清空记忆后调用 */
