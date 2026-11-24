@@ -39,6 +39,7 @@ import { Modal } from '../base/Modal.js'
 import { Select } from '../base/Select.js'
 import { showToast } from '../base/toastState.js'
 import { ApiKeyConfirm, ApiKeyField, useApiKeyEditor } from './ApiKeyField.js'
+import { ToolsSettings } from './ToolsSettings.js'
 import {
   ClaudeFields,
   GeminiFields,
@@ -73,6 +74,7 @@ const sections: { value: SettingsSection; label: TranslationKey; icon: ReactNode
     label: 'settingDialogAsideAppearanceOptionLabel',
     icon: <IconLightOutline16 />,
   },
+  { value: 'tools', label: 'settingDialogAsideToolsOptionLabel', icon: <IconThinkOutline16 /> },
   { value: 'memory', label: 'settingDialogAsideMemoryOptionLabel', icon: <IconThinkOutline16 /> },
   { value: 'data', label: 'settingDialogAsideDataOptionLabel', icon: <IconDataOutline16 /> },
 ]
@@ -131,6 +133,8 @@ const SettingsContent = () => {
               <AppearanceSettings />
               <BackgroundSetting />
             </>
+          ) : section === 'tools' ? (
+            <ToolsSettings />
           ) : section === 'memory' ? (
             <MemorySettings />
           ) : (
@@ -528,7 +532,7 @@ const AppearanceSettings = () => {
 }
 
 /** `reason` 为失败原因的文案 key，展示时按当前语言翻译后填入 `message` 参数。 */
-type Status = (TranslationMessage & { error?: boolean; reason?: TranslationKey }) | null
+export type Status = (TranslationMessage & { error?: boolean; reason?: TranslationKey }) | null
 
 /** 导出失败附带原因：预期的错误用对应文案作原因，其他错误用错误信息。 */
 const errorStatus = (key: TranslationKey, error: unknown): Status => ({
@@ -539,7 +543,7 @@ const errorStatus = (key: TranslationKey, error: unknown): Status => ({
   error: true,
 })
 
-const SettingCell = ({
+export const SettingCell = ({
   label,
   description,
   status,
