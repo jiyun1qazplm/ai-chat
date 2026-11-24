@@ -46,13 +46,18 @@ const toTranscript = (messages: { role: string; content: string }[]): string =>
     .map((message) => `${message.role === 'user' ? '用户' : '助手'}：${message.content.trim()}`)
     .join('\n')
 
-/** 调用当前服务商，收集完整的文本回答 */
+/**
+ * 调用当前服务商，收集完整的文本回答。
+ * modelOverride 用于「记忆处理模型」：留空则跟随当前服务商的模型。
+ */
 const collectText = async (
   system: string,
   userText: string,
-  signal: AbortSignal
+  signal: AbortSignal,
+  modelOverride?: string
 ): Promise<string> => {
   const settings = useSettings.getState()
+  const model = modelOverride?.trim()
   const messages = [{ role: 'user' as const, content: userText }]
   let stream: AsyncGenerator<MessageStreamEvent>
 
@@ -61,12 +66,12 @@ const collectText = async (
       stream = streamOpenAIMessage({
         baseUrl: settings.openaiBaseUrl,
         apiKey: settings.openaiApiKey ?? '',
-        model: settings.openaiModel,
+        model: model || settings.openaiModel,
         system,
         messages,
         images: new Map(),
         reasoningParam: buildReasoningParam(
-          settings.openaiModel,
+          model || settings.openaiModel,
           false,
           settings.reasoningMode,
           settings.reasoningOnMode
@@ -78,7 +83,7 @@ const collectText = async (
       stream = streamGeminiMessage({
         baseUrl: settings.geminiBaseUrl || DEFAULT_GEMINI_BASE_URL,
         apiKey: settings.geminiApiKey ?? '',
-        model: settings.geminiModel,
+        model: model || settings.geminiModel,
         system,
         messages,
         images: new Map(),
@@ -90,7 +95,7 @@ const collectText = async (
       stream = streamClaudeMessage({
         baseUrl: settings.claudeBaseUrl || DEFAULT_CLAUDE_BASE_URL,
         apiKey: settings.claudeApiKey ?? '',
-        model: settings.claudeModel,
+        model: model || settings.claudeModel,
         system,
         messages,
         images: new Map(),
@@ -102,7 +107,7 @@ const collectText = async (
       stream = streamMessage(
         settings.apiKey ?? '',
         {
-          model: 'deepseek-flash',
+          model: (model || 'deepseek-flash') as 'deepseek-flash' | 'deepseek-v4-pro',
           system,
           messages,
           thinking: { type: 'disabled' },
@@ -189,5 +194,48 @@ export const consolidateMemories = async (
   }
   const input = texts.join('\n')
   const output = await collectText(CONSOLIDATE_SYSTEM, input, signal)
+  return parseExtracted(output)
+}
+
+/** 更新记忆用的指令：模型拿到「当前列表 + 新对话」，输出完整的新列表 */
+const UPDATE_SYSTEM = `你是一个记忆管理助手。你会收到用户当前的长期记忆列表，以及最近的一段对话。
+
+你的任务：决定如何更新这份记忆列表。
+
+你可以：
+- 新增：对话里出现了值得长期记住的新信息
+- 修改：已有条目过时或不准确（例如把「这周在准备考试」改为「2026 年 11 月参加过考试」）
+- 删除：条目已被推翻、重复或不再成立
+- 不动：新对话没有带来有价值的信息
+
+规则：
+1. 只保留稳定、长期有效的信息；一次性的问题细节不要记
+2. 不要记录对话中出现的第三方隐私，也不要记录助手自己说过的话
+3. 合并重复条目，保持每条独立、简短（不超过 30 字）
+4. 总数不超过 20 条；超出时优先保留最重要的
+5. 宁缺毋滥：没有值得记的内容时，原样返回当前列表
+
+输出格式：输出更新后的完整列表，每行一条，行首标记类别：
+[p] 回答偏好（长度、语气、格式、语言、称呼、忌讳）
+[f] 用户事实（身份、职业、所在地、习惯、长期目标）
+不要输出解释、序号或其他文字。`
+
+/**
+ * 让模型管理记忆：传入当前列表与最近的对话，返回更新后的完整列表。
+ * 模型可以按需增删改，也可以原样返回表示不改动。
+ */
+export const updateMemories = async (
+  current: { text: string; kind: 'fact' | 'preference' }[],
+  transcript: { role: string; content: string }[],
+  signal: AbortSignal,
+  modelOverride?: string
+): Promise<ExtractedMemory[]> => {
+  const listText =
+    current.length > 0
+      ? current.map((item) => `[${item.kind === 'preference' ? 'p' : 'f'}] ${item.text}`).join('\n')
+      : '（当前没有记忆）'
+  const conversation = toTranscript(transcript)
+  const input = `当前记忆列表：\n${listText}\n\n最近对话：\n${conversation}`
+  const output = await collectText(UPDATE_SYSTEM, input, signal, modelOverride)
   return parseExtracted(output)
 }
