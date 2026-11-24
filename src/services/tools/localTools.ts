@@ -317,3 +317,19 @@ export const runLocalTool = async (
       return `不支持的工具：${name}`
   }
 }
+
+/** Gemini 的函数声明格式 */
+export const toGeminiFunctionDeclarations = () =>
+  LOCAL_TOOL_DEFS.map((tool) => ({
+    name: tool.function.name,
+    description: tool.function.description,
+    parameters: tool.function.parameters,
+  }))
+
+/** Anthropic / Claude 的工具格式 */
+export const toClaudeTools = () =>
+  LOCAL_TOOL_DEFS.map((tool) => ({
+    name: tool.function.name,
+    description: tool.function.description,
+    input_schema: tool.function.parameters,
+  }))
