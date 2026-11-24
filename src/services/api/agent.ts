@@ -17,6 +17,11 @@ import {
 } from './openai.js'
 import type { ImageDataUrls } from './openai.js'
 import type { MessageParam, MessageStreamEvent, WebSearchResult } from './types.js'
+import {
+  LOCAL_TOOL_DEFS,
+  runLocalTool,
+  type LocalToolHandlers,
+} from '../tools/localTools.js'
 
 /** 最多允许模型连续发起几轮工具调用，避免死循环 */
 const MAX_TOOL_ROUNDS = 3
@@ -180,6 +185,7 @@ export async function* runOpenAIAgent({
   messages,
   images,
   search,
+  localTools,
   reasoningParam,
   signal,
 }: {
@@ -190,12 +196,14 @@ export async function* runOpenAIAgent({
   messages: MessageParam[]
   images: ImageDataUrls
   search?: SearchRunner
+  /** 传入后启用本地工具（时间、计算器、询问用户、位置） */
+  localTools?: LocalToolHandlers
   reasoningParam?: ReasoningParam
   signal: AbortSignal
 }): AsyncGenerator<AgentEvent> {
   const history: OpenAIMessage[] = toOpenAIMessages(system, messages, images)
 
-  if (!search) {
+  if (!search && !localTools) {
     yield* streamOnce({
       baseUrl,
       apiKey,
@@ -208,6 +216,12 @@ export async function* runOpenAIAgent({
     return
   }
 
+  // 搜索工具与本地工具同时声明，由模型自行决定调用哪个
+  const tools = [
+    ...(search ? SEARCH_TOOLS : []),
+    ...(localTools ? LOCAL_TOOL_DEFS : []),
+  ]
+
   for (let round = 0; round < MAX_TOOL_ROUNDS; round += 1) {
     const result = yield* drain(
       streamOnce({
@@ -215,7 +229,7 @@ export async function* runOpenAIAgent({
         apiKey,
         model,
         messages: history,
-        tools: SEARCH_TOOLS,
+        tools,
         reasoningParam,
         signal,
       })
@@ -236,6 +250,21 @@ export async function* runOpenAIAgent({
     })
 
     for (const call of result.toolCalls) {
+      // 本地工具：时间、计算器、询问用户、位置
+      if (localTools && call.name !== 'web_search') {
+        let args: Record<string, unknown> = {}
+        try {
+          const parsed = JSON.parse(call.arguments || '{}') as unknown
+          if (parsed && typeof parsed === 'object') {
+            args = parsed as Record<string, unknown>
+          }
+        } catch {
+          args = {}
+        }
+        const text = await runLocalTool(call.name, args, localTools, signal)
+        history.push({ role: 'tool', tool_call_id: call.id, content: text })
+        continue
+      }
       if (call.name !== 'web_search') {
         history.push({
           role: 'tool',
@@ -253,6 +282,10 @@ export async function* runOpenAIAgent({
       query = query.trim()
       if (!query) {
         history.push({ role: 'tool', tool_call_id: call.id, content: '搜索关键词为空。' })
+        continue
+      }
+      if (!search) {
+        history.push({ role: 'tool', tool_call_id: call.id, content: '未启用联网搜索。' })
         continue
       }
       yield { type: 'search-start', query }
