@@ -79,6 +79,11 @@ type Settings = {
   accentAffectsBubble: boolean
   /** 回车键行为：true 直接发送、Shift+Enter 换行；false 换行、改用发送按钮发送 */
   enterToSend: boolean
+  /** AI 工具开关：关闭后不再向模型声明对应工具 */
+  toolTime: boolean
+  toolCalculator: boolean
+  toolAskUser: boolean
+  toolLocation: boolean
   /** 正文字号倍数，1 为默认 */
   fontScale: number
   /** 消息列表的疏密：紧凑 / 标准 / 宽松 */
@@ -138,6 +143,10 @@ const KEYS = {
   // 键名带 v2：旧版本保存过的开启状态不再生效，升级后统一回到默认关闭
   accentAffectsBubble: 'chat-demo:accent-affects-bubble-v2',
   enterToSend: 'chat-demo:enter-to-send',
+  toolTime: 'chat-demo:tool-time',
+  toolCalculator: 'chat-demo:tool-calculator',
+  toolAskUser: 'chat-demo:tool-ask-user',
+  toolLocation: 'chat-demo:tool-location',
   fontScale: 'chat-demo:font-scale',
   density: 'chat-demo:density',
   topBlur: 'chat-demo:top-blur',
@@ -383,6 +392,10 @@ export const useSettings = create<Settings>(() => ({
   accentAffectsBubble: read(KEYS.accentAffectsBubble) === 'true',
   // 仅在明确保存过「回车换行」时关闭，默认保持回车发送
   enterToSend: read(KEYS.enterToSend) !== 'false',
+  toolTime: read(KEYS.toolTime) !== 'false',
+  toolCalculator: read(KEYS.toolCalculator) !== 'false',
+  toolAskUser: read(KEYS.toolAskUser) !== 'false',
+  toolLocation: read(KEYS.toolLocation) !== 'false',
   fontScale: initialFontScale(),
   density: initialDensity(),
   topBlur: initialTopBlur(),
@@ -503,6 +516,15 @@ export const setAccentColor = (accentColor: string | null) => {
 export const setAccentAffectsBubble = (accentAffectsBubble: boolean) => {
   write(KEYS.accentAffectsBubble, String(accentAffectsBubble))
   useSettings.setState({ accentAffectsBubble })
+}
+
+/** 开关某个 AI 工具 */
+export const setToolEnabled = (
+  key: 'toolTime' | 'toolCalculator' | 'toolAskUser' | 'toolLocation',
+  enabled: boolean
+) => {
+  write(KEYS[key], String(enabled))
+  useSettings.setState({ [key]: enabled } as Partial<Settings>)
 }
 
 export const setEnterToSend = (enterToSend: boolean) => {
