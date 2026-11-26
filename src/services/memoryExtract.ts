@@ -14,7 +14,8 @@ import type { MessageStreamEvent } from './api/types.js'
 import { useSettings } from './settings.js'
 
 /** 提取用的指令：要求简短、去重、只保留长期有效的信息 */
-const EXTRACT_SYSTEM = `你是一个信息提取助手。阅读用户提供的对话，找出值得长期记住的内容。
+/** 提取记忆的默认提示词；用户可在设置中覆盖 */
+export const EXTRACT_SYSTEM = `你是一个信息提取助手。阅读用户提供的对话，找出值得长期记住的内容。
 
 分成两类提取：
 
@@ -38,6 +39,13 @@ const EXTRACT_SYSTEM = `你是一个信息提取助手。阅读用户提供的�
 [f] 用户事实的内容
 每条不超过 25 个字，最多 6 条。
 没有值得记住的内容就只输出「无」。不要输出其他任何文字。`
+
+/**
+ * 读取用户自定义的提示词；留空则用默认值。
+ * 三种提示词分别对应：提取、整理、更新管理。
+ */
+const resolvePrompt = (key: 'extract' | 'consolidate' | 'update', fallback: string): string =>
+  useSettings.getState().memoryPrompts[key]?.trim() || fallback
 
 /** 从消息里拼出干净的对话文本，供模型阅读 */
 const toTranscript = (messages: { role: string; content: string }[]): string =>
@@ -164,12 +172,13 @@ export const extractMemories = async (
   if (!text.trim()) {
     return []
   }
-  const output = await collectText(EXTRACT_SYSTEM, text, signal)
+  const output = await collectText(resolvePrompt('extract', EXTRACT_SYSTEM), text, signal)
   return parseExtracted(output)
 }
 
 /** 整理记忆用的指令：要求合并重复、更新过时、丢弃矛盾 */
-const CONSOLIDATE_SYSTEM = `你是一个记忆整理助手。用户给出了他的长期记忆列表，请整理成更精炼的版本。
+/** 整理记忆的默认提示词；用户可在设置中覆盖 */
+export const CONSOLIDATE_SYSTEM = `你是一个记忆整理助手。用户给出了他的长期记忆列表，请整理成更精炼的版本。
 
 整理规则：
 1. 合并重复或高度相似的条目
@@ -193,12 +202,13 @@ export const consolidateMemories = async (
     return []
   }
   const input = texts.join('\n')
-  const output = await collectText(CONSOLIDATE_SYSTEM, input, signal)
+  const output = await collectText(resolvePrompt('consolidate', CONSOLIDATE_SYSTEM), input, signal)
   return parseExtracted(output)
 }
 
 /** 更新记忆用的指令：模型拿到「当前列表 + 新对话」，输出完整的新列表 */
-const UPDATE_SYSTEM = `你是一个记忆管理助手。你会收到用户当前的长期记忆列表，以及最近的一段对话。
+/** 更新（增删改）记忆的默认提示词；用户可在设置中覆盖 */
+export const UPDATE_SYSTEM = `你是一个记忆管理助手。你会收到用户当前的长期记忆列表，以及最近的一段对话。
 
 你的任务：决定如何更新这份记忆列表。
 
@@ -236,6 +246,11 @@ export const updateMemories = async (
       : '（当前没有记忆）'
   const conversation = toTranscript(transcript)
   const input = `当前记忆列表：\n${listText}\n\n最近对话：\n${conversation}`
-  const output = await collectText(UPDATE_SYSTEM, input, signal, modelOverride)
+  const output = await collectText(
+    resolvePrompt('update', UPDATE_SYSTEM),
+    input,
+    signal,
+    modelOverride
+  )
   return parseExtracted(output)
 }
