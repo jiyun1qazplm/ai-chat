@@ -268,3 +268,36 @@
   white-space: pre-wrap;
   word-break: break-word;
 }
+
+/* 提示词区块的折叠标题：一行显示，点箭头展开 */
+.collapseHeader {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 6px 0;
+  border: none;
+  background: none;
+  color: var(--dsw-alias-label-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.caret {
+  flex-shrink: 0;
+  width: 12px;
+  color: var(--dsw-alias-label-caption);
+  font-size: 11px;
+  line-height: 1;
+}
+
+.summary {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--dsw-alias-label-caption);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
