@@ -25,6 +25,8 @@ export const MemoryPromptSettings = () => {
   const [which, setWhich] = useState<PromptKey>('update')
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState('')
+  /** 默认收起成一行，点箭头展开 */
+  const [expanded, setExpanded] = useState(false)
 
   const saved = prompts[which]
   const effective = saved.trim() || DEFAULTS[which]
@@ -45,6 +47,26 @@ export const MemoryPromptSettings = () => {
 
   return (
     <div className={styles.wrapper}>
+      <button
+        type="button"
+        className={styles.collapseHeader}
+        aria-expanded={expanded}
+        onClick={() => setExpanded((value) => !value)}
+      >
+        <span className={styles.caret} aria-hidden>
+          {expanded ? '▾' : '▸'}
+        </span>
+        <span className={styles.label}>{t('memoryPrompt')}</span>
+        {/* 收起时用一行摘要提示当前状态 */}
+        {!expanded ? (
+          <span className={styles.summary}>
+            {saved.trim() ? t('memoryPromptCustom') : t('memoryPromptDefault')}
+          </span>
+        ) : null}
+      </button>
+
+      {!expanded ? null : (
+      <>
       <div className={styles.header}>
         <div className={styles.label}>{t('memoryPrompt')}</div>
         <Select
@@ -107,6 +129,8 @@ export const MemoryPromptSettings = () => {
             ) : null}
           </div>
         </>
+      )}
+      </>
       )}
     </div>
   )
