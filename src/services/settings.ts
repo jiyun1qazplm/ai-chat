@@ -90,6 +90,8 @@ type Settings = {
   density: 'compact' | 'normal' | 'comfortable'
   /** 顶部是否用渐变模糊让滚到标题栏下的消息自然淡出 */
   topBlur: boolean
+  /** 记忆相关提示词的自定义内容；空串表示用内置默认值 */
+  memoryPrompts: { extract: string; consolidate: string; update: string }
   /** 顶部模糊强度（像素） */
   topBlurStrength: number
   /** 顶部模糊覆盖的高度，以视口高度的百分比表示（4-60） */
@@ -150,6 +152,9 @@ const KEYS = {
   fontScale: 'chat-demo:font-scale',
   density: 'chat-demo:density',
   topBlur: 'chat-demo:top-blur',
+  memoryPromptExtract: 'chat-demo:memory-prompt-extract',
+  memoryPromptConsolidate: 'chat-demo:memory-prompt-consolidate',
+  memoryPromptUpdate: 'chat-demo:memory-prompt-update',
   topBlurStrength: 'chat-demo:top-blur-strength',
   topBlurHeight: 'chat-demo:top-blur-height',
   chatBackground: 'chat-demo:chat-background',
@@ -399,6 +404,11 @@ export const useSettings = create<Settings>(() => ({
   fontScale: initialFontScale(),
   density: initialDensity(),
   topBlur: initialTopBlur(),
+  memoryPrompts: {
+    extract: read('chat-demo:memory-prompt-extract') ?? '',
+    consolidate: read('chat-demo:memory-prompt-consolidate') ?? '',
+    update: read('chat-demo:memory-prompt-update') ?? '',
+  },
   topBlurStrength: initialTopBlurStrength(),
   topBlurHeight: initialTopBlurHeight(),
   chatBackground: read(KEYS.chatBackground),
@@ -732,4 +742,16 @@ export const setTopBlurHeight = (height: number) => {
   const value = Math.min(60, Math.max(4, Math.round(height)))
   write(KEYS.topBlurHeight, String(value))
   useSettings.setState({ topBlurHeight: value })
+}
+
+/** 保存某类记忆提示词；传空串恢复默认 */
+export const setMemoryPrompt = (key: 'extract' | 'consolidate' | 'update', value: string) => {
+  const map = {
+    extract: KEYS.memoryPromptExtract,
+    consolidate: KEYS.memoryPromptConsolidate,
+    update: KEYS.memoryPromptUpdate,
+  } as const
+  write(map[key], value)
+  const memoryPrompts = { ...useSettings.getState().memoryPrompts, [key]: value }
+  useSettings.setState({ memoryPrompts })
 }
