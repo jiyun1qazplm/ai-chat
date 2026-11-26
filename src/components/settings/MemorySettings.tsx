@@ -21,6 +21,7 @@ import { useSettings } from '../../services/settings.js'
 import { Button } from '../base/Button.js'
 import { Select } from '../base/Select.js'
 import { showToast } from '../base/toastState.js'
+import { MemoryPromptSettings } from './MemoryPromptSettings.js'
 import styles from './MemorySettings.module.css'
 
 /** 超过这个长度（含换行）就认为是长记忆，默认折叠 */
@@ -309,6 +310,8 @@ export const MemorySettings = () => {
               {t('memoryClearAll')}
             </Button>
           ) : null}
+
+          <MemoryPromptSettings />
 
           <div className={styles.row}>
             <span className={styles.rowLabel}>{t('memoryModel')}</span>
